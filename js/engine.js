@@ -34,6 +34,7 @@ export function buildLessonLevels(lessonId, prev = []) {
   const L = LESSON[lessonId];
   if (L.type === 'words') return wordLevels(L.itemIds, prev);
   if (L.type === 'phrases') return phraseLevels(L.itemIds);
+  if (L.type === 'dialog') return dialogLevels(L);
   return grammarLevels(L);
 }
 
@@ -78,6 +79,33 @@ function grammarLevels(L) {
     { title: 'Собери предложение', emoji: '🧩', tasks: builds.slice(0, h).map(exTask) },
     { title: 'Финал', emoji: '🏆', tasks: shuffle([...builds.slice(h), ...clozes.slice(0, 2)]).map(exTask) },
   ];
+}
+
+// Диалог: посмотреть сцену → понять реплики собеседника → ответить самому → то же на слух.
+// Ответы идут по порядку разговора, поэтому после ошибки реплику не откладываем (noRetry).
+function dialogLevels(L) {
+  const idx = (who) => L.lines.map((l, i) => (l[0] === who ? i : -1)).filter((i) => i >= 0);
+  return [
+    { title: 'Сцена', emoji: '🎬', tasks: [{ t: 'scene', lesson: L.id }] },
+    { title: 'Что тебе сказали?', emoji: '👂', tasks: shuffle(idx('a')).map((i) => ({ t: 'listen', lesson: L.id, i })) },
+    { title: 'Ответь', emoji: '💬', tasks: idx('me').map((i) => ({ t: 'chat', lesson: L.id, i, noRetry: true })) },
+    { title: 'Финал на слух', emoji: '🏆', tasks: idx('me').map((i) => ({ t: 'chat', lesson: L.id, i, hide: true, noRetry: true })) },
+  ];
+}
+
+// Быстрое повторение: случайные единицы из всего пройденного и случайные типы карточек.
+// ~14 карточек + «пары» ≈ 2–4 минуты. Каждый запуск — новый набор.
+const ANY_TYPE = {
+  word: ['sr_ru', 'ru_sr', 'audio', 'letters', 'type', 'ru_sr', 'letters'],
+  phrase: ['sr_ru', 'ru_sr', 'audio', 'build'],
+  sentence: ['build'],
+};
+export function buildQuickTasks(learned, n = 14) {
+  const ids = shuffle(learned);
+  const tasks = ids.slice(0, n).map((id) => ({ t: pick(ANY_TYPE[ITEMS[id].kind]), id }));
+  const words = ids.slice(n).filter((id) => ITEMS[id].kind === 'word');
+  if (words.length >= 5) tasks.splice(Math.floor(Math.random() * tasks.length), 0, matchTask(words.slice(0, 5)));
+  return tasks;
 }
 
 // Повторение: тип карточки зависит от того, насколько хорошо единица уже знакома.

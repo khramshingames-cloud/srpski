@@ -358,3 +358,35 @@ body.in-session nav { display: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---- быстрое повторение ---- */
+.quick { display: flex; align-items: center; gap: 14px; cursor: pointer; background: linear-gradient(135deg, var(--accent-soft), var(--card)); }
+.quick b { display: block; font-size: 17px; }
+.quick small { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+.quick > div { flex: 1; }
+.q-ico { width: 46px; height: 46px; border-radius: 15px; display: grid; place-items: center; font-size: 24px; background: var(--accent); flex: none; }
+.q-go { font-size: 28px; color: var(--muted); }
+
+/* ---- диалоги ---- */
+.badge.dialog { background: var(--accent-soft); color: var(--accent); }
+.scene-head { text-align: center; padding: 6px 8px 14px; }
+.scene-e { font-size: 64px; }
+.scene-head p { margin: 6px 0 4px; font-size: 17px; font-weight: 600; }
+.scene-head small { color: var(--muted); font-size: 13px; }
+.chat { display: flex; flex-direction: column; gap: 10px; padding: 4px 0 14px; }
+.bub { display: flex; gap: 8px; align-items: flex-end; max-width: 88%; cursor: pointer; animation: fadeIn .25s ease; }
+.bub.me { align-self: flex-end; flex-direction: row-reverse; }
+.ava { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--bg2); font-size: 19px; flex: none; }
+.ava.big { width: 64px; height: 64px; font-size: 36px; }
+.bub-in { position: relative; background: var(--card); border-radius: 20px 20px 20px 6px; padding: 10px 40px 10px 14px; box-shadow: var(--shadow); }
+.bub.me .bub-in { background: var(--primary-soft); border-radius: 20px 20px 6px 20px; }
+.bub.playing .bub-in { box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
+.bub-t { font-size: 17px; font-weight: 600; }
+.bub-ru { color: var(--muted); font-size: 14px; margin-top: 4px; }
+.tr { position: absolute; right: 8px; top: 8px; border: 0; background: var(--bg2); color: var(--muted); border-radius: 8px; font-size: 11px; font-weight: 800; padding: 3px 6px; }
+.hidden-t { color: var(--muted); letter-spacing: 2px; }
+.show-t { padding: 0; font-size: 13px; }
+.who { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.your-turn { color: var(--muted); font-weight: 700; font-size: 14px; margin: 4px 2px 10px; text-transform: uppercase; letter-spacing: .05em; }
+.fb small { display: block; margin-top: 6px; font-size: 15px; color: var(--text); opacity: .8; }
+.play-all { width: 100%; }

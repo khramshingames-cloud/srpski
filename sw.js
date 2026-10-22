@@ -4,7 +4,7 @@
 // Озвучка: сначала кэш, в отдельном хранилище — обновление кода её не перекачивает.
 // Приложение само докачивает озвучку выбранного голоса в фоне (warmAudio в audio.js).
 // После перегенерации озвучки — поднять версию AUDIO.
-const CACHE = 'srpski-v4';
+const CACHE = 'srpski-v5';
 const AUDIO = 'srpski-audio-v1';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',

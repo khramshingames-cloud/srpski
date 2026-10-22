@@ -1,6 +1,6 @@
 import { COURSE, ITEMS, LESSON, UNITS, UNIT } from './data.js';
 import * as store from './store.js';
-import { buildLessonLevels, buildReviewTasks, retryTasks, distractors, shuffle } from './engine.js';
+import { buildLessonLevels, buildReviewTasks, buildQuickTasks, retryTasks, distractors, shuffle } from './engine.js';
 import { speak, stop, preload, warmAudio, VOICES } from './audio.js';
 import { toCyr, letters, norm, stripDiacritics } from './translit.js';
 import { renderProgress, knowledge, cefr } from './progress.js';
@@ -14,7 +14,7 @@ const autoSay = (sr) => { if (store.settings().autoplay) setTimeout(() => say(sr
 // Лёгкая вибрация на Android (iPhone веб-приложениям вибрацию не даёт)
 const buzz = (p) => { try { navigator.vibrate?.(p); } catch {} };
 
-const TYPE_LABEL = { words: 'Слова', grammar: 'Правило', phrases: 'Фразы' };
+const TYPE_LABEL = { words: 'Слова', grammar: 'Правило', phrases: 'Фразы', dialog: 'Диалог' };
 const view = $('#view');
 let tab = 'home';
 
@@ -70,7 +70,8 @@ function renderHome() {
           <p>${reviewIds.length} карточек · ~${Math.max(2, Math.round(reviewIds.length * 0.15))} мин${due ? ` · пора: ${due}` : ''}</p>
           <button class="btn" data-act="review">Начать повторение</button></div></div>`;
 
-  const preview = next?.type === 'grammar'
+  const preview = next?.type === 'dialog' ? `${next.emoji} ${esc(next.scene)}`
+    : next?.type === 'grammar'
     ? `${next.rules.map((r) => esc(r.title)).join(' · ')}`
     : next ? next.itemIds.filter((id) => ITEMS[id].kind !== 'sentence').slice(0, 5)
       .map((id) => `<span class="chip">${ITEMS[id].emoji} ${esc(D(ITEMS[id].sr))}</span>`).join('') : '';
@@ -104,13 +105,19 @@ function renderHome() {
     </button>
     ${unit ? `<p class="unit-line">${unit.emoji} Блок ${UNITS.indexOf(unit) + 1} · ${esc(unit.title)} <span>${unitDone}/${unitLessons.length}</span></p>` : ''}
     ${reviewCard}
-    ${lessonCard}`;
+    ${lessonCard}
+    ${learned >= 4 ? `<button class="card quick" data-act="quick">
+      <span class="q-ico">⚡</span>
+      <div><b>Быстрое повторение</b><small>2–4 минуты · всё пройденное вперемешку · каждый раз новое</small></div>
+      <span class="q-go">›</span>
+    </button>` : ''}`;
 
   view.onclick = (e) => {
     const b = e.target.closest('[data-act]');
     if (!b) return;
     if (b.dataset.act === 'review') startReview();
     if (b.dataset.act === 'extra-review') startReview(true);
+    if (b.dataset.act === 'quick') startQuick();
     if (b.dataset.act === 'lesson') startLesson(b.dataset.id);
     if (b.dataset.act === 'progress') { tab = 'progress'; renderTabs(); }
   };
@@ -148,7 +155,7 @@ function renderCourse() {
           return `<li class="${isDone ? 'done' : isNext ? 'next' : 'locked'}" data-id="${L.id}">
             <span class="c-ico">${icon}</span>
             <div><span class="badge ${L.type}">${TYPE_LABEL[L.type]}</span> <b>${esc(L.title)}</b>
-            <small>${L.type === 'phrases' ? n + ' фраз' : L.type === 'grammar' ? L.exercises.length + ' упражнений' : n + ' слов'}</small>
+            <small>${L.type === 'phrases' ? n + ' фраз' : L.type === 'grammar' ? L.exercises.length + ' упражнений' : L.type === 'dialog' ? L.lines.filter((l) => l[0] === 'me').length + ' реплик · ' + esc(L.who.name) : n + ' слов'}</small>
             ${isDone || isNext ? levelDots(L.id) : ''}</div>
           </li>`;
         }).join('')}</ul>
@@ -305,6 +312,23 @@ function renderSettings() {
 
 // ================= Сессия (урок или повторение) =================
 
+// Быстрое повторение: правильные ответы не сдвигают расписание (чтобы не «перескакивать» интервалы),
+// а ошибки учитываются — такие слова чаще придут в ежедневном повторении.
+function startQuick() {
+  const ids = store.learnedIds();
+  if (ids.length < 4) return;
+  runSession({
+    title: 'Быстрое повторение',
+    tasks: buildQuickTasks(ids),
+    pool: ids,
+    onDone(errors) {
+      Object.keys(errors).filter((id) => ITEMS[id]).forEach((id) => store.record(id, errors[id]));
+      store.save();
+      return { emoji: '⚡', title: 'Быстрое повторение — готово!', next: { label: '⚡ Ещё раз — новые задания', run: startQuick } };
+    },
+  });
+}
+
 function startReview(extra = false) {
   const ids = store.pickReview(undefined, extra);
   if (!ids.length) return;
@@ -367,6 +391,9 @@ function runSession({ title, tasks, pool, onDone }) {
     ...(t.ex ? [t.ex.sr.replace('___', t.ex.a)] : []),
     ...(t.t === 'rule' ? LESSON[t.lesson].rules[t.i].examples.map(([sr]) => sr) : []),
   ]))]);
+  // в диалогах у собеседника свой голос
+  const dl = tasks.find((t) => LESSON[t.lesson]?.type === 'dialog');
+  if (dl) LESSON[dl.lesson].lines.forEach((l) => preload([l[1]], voiceOf(LESSON[dl.lesson], l)));
   const ov = document.createElement('div');
   ov.className = 'session';
   ov.innerHTML = `
@@ -416,7 +443,7 @@ function runSession({ title, tasks, pool, onDone }) {
       go.onclick = () => {
         const res = R.check();
         S.answered++;
-        const errId = task.id || task.ex?.id;
+        const errId = task.id || task.ex?.id || `${task.lesson}:${task.i}`;
         store.logAnswer(task.t, res.ok, task.id);
         buzz(res.ok ? 12 : [30, 40, 30]);
         if (res.ok) {
@@ -424,11 +451,11 @@ function runSession({ title, tasks, pool, onDone }) {
           fb.innerHTML = `<b>${res.near ? 'Почти! ' : pickPraise()}</b>${res.near ? `<span>Правильно: ${esc(res.answer)}</span>` : ''}`;
         } else {
           foot.className = 'bad';
-          fb.innerHTML = `<b>Правильно:</b><span>${esc(res.answer)}</span>`;
+          fb.innerHTML = `<b>Правильно:</b><span>${esc(res.answer)}</span>${res.why ? `<small>${esc(res.why)}</small>` : ''}`;
           markError(errId); S.mistakes++;
-          requeue(task, []);
+          if (!task.noRetry) requeue(task, []);
         }
-        if (res.sayAfter) say(res.sayAfter);
+        if (res.sayAfter) speak(res.sayAfter, res.sayVoice ? { voice: res.sayVoice } : {});
         go.textContent = 'Дальше'; go.onclick = advance;
       };
     }
@@ -556,7 +583,101 @@ function tiles(el, units, onChange) {
   return { lock(ok) { box.classList.add('locked'); ans.classList.add(ok ? 'right' : 'wrong'); } };
 }
 
+// ---- диалоги ----
+const voiceOf = (L, line) => (line[0] === 'a' ? L.who.voice : store.settings().voice);
+const sayLine = (L, line) => speak(line[1], { voice: voiceOf(L, line), slow: false });
+
+function bubble(L, line, i, { hideText = false } = {}) {
+  const me = line[0] === 'me';
+  return `<div class="bub ${me ? 'me' : 'them'}" data-line="${i}">
+    ${me ? '' : `<span class="ava" title="${esc(L.who.name)}">${L.who.emoji}</span>`}
+    <div class="bub-in">
+      <div class="bub-t">${hideText ? '<span class="hidden-t">🔊 · · ·</span> <button class="link show-t">показать</button>' : esc(D(line[1]))}</div>
+      <div class="bub-ru" hidden>${esc(line[2])}</div>
+      <button class="tr" aria-label="Перевод">ru</button>
+    </div>
+  </div>`;
+}
+// Нажатие на реплику — звук; «ru» — перевод; «показать» — текст скрытой реплики
+function bindChat(el, L) {
+  el.querySelectorAll('.bub').forEach((b) => {
+    b.onclick = (e) => {
+      const line = L.lines[+b.dataset.line];
+      if (e.target.closest('.tr')) { const ru = b.querySelector('.bub-ru'); ru.hidden = !ru.hidden; return; }
+      if (e.target.closest('.show-t')) { b.querySelector('.bub-t').textContent = D(line[1]); return; }
+      sayLine(L, line);
+    };
+  });
+}
+
 const RENDER = {
+  scene(task, el) {
+    const L = LESSON[task.lesson];
+    el.innerHTML = `<div class="scene-head"><div class="scene-e">${L.emoji}</div>
+      <p>${esc(L.scene)}</p><small>Нажми на реплику — прозвучит, «ru» — перевод</small></div>
+      <div class="chat">${L.lines.map((l, i) => bubble(L, l, i)).join('')}</div>
+      <button class="btn ghost play-all">▶ Прослушать весь диалог</button>`;
+    bindChat(el, L);
+    $('.play-all', el).onclick = async () => {
+      for (const [i, l] of L.lines.entries()) {
+        const b = el.querySelector(`.bub[data-line="${i}"]`);
+        if (!b) return;
+        b.classList.add('playing');
+        b.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        const ended = await sayLine(L, l);
+        b.classList.remove('playing');
+        if (!ended) return; // прервали — например, нажали на другую реплику
+      }
+    };
+    return { mode: 'info' };
+  },
+
+  listen(task, el, pool, ctx) {
+    const L = LESSON[task.lesson], line = L.lines[task.i];
+    const others = shuffle(L.lines.filter((l, i) => l[0] === 'a' && i !== task.i)).slice(0, 2).map((l) => l[2]);
+    el.innerHTML = `<div class="q"><span class="tag">Что тебе сказали?</span>
+      <div class="who"><span class="ava big">${L.who.emoji}</span><b>${esc(L.who.name)}</b></div>
+      <button class="spk big" aria-label="Озвучить">🔊</button>
+      <button class="link peek">Показать текст</button><div class="sr phrase" hidden>${esc(D(line[1]))}</div></div>`;
+    $('.spk', el).onclick = () => speak(line[1], { voice: voiceOf(L, line) });
+    $('.peek', el).onclick = (e) => { e.target.hidden = true; e.target.nextElementSibling.hidden = false; };
+    let chosen = null;
+    const O = optionList(el, shuffle([line[2], ...others]), (x) => x, (x) => { chosen = x; ctx.ready(true); });
+    setTimeout(() => sayLine(L, line), 200);
+    return {
+      check() {
+        const ok = chosen === line[2];
+        O.reveal(line[2], chosen);
+        return { ok, answer: `${D(line[1])} — ${line[2]}` };
+      },
+    };
+  },
+
+  chat(task, el, pool, ctx) {
+    const L = LESSON[task.lesson], line = L.lines[task.i], prev = L.lines[task.i - 1];
+    el.innerHTML = `<div class="chat">${L.lines.slice(0, task.i).map((l, i) => bubble(L, l, i, { hideText: task.hide && l[0] === 'a' })).join('')}</div>
+      <p class="your-turn">Твой ответ:</p>`;
+    bindChat(el, L);
+    const chat = $('.chat', el);
+    let chosen = null;
+    const opts = shuffle([line[1], ...line[3].map(([sr]) => sr)]);
+    const O = optionList(el, opts, D, (x) => { chosen = x; speak(x, { slow: false }); ctx.ready(true); });
+    requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
+    if (prev && prev[0] === 'a') setTimeout(() => sayLine(L, prev), 200);
+    return {
+      check() {
+        const ok = chosen === line[1];
+        O.reveal(line[1], chosen);
+        if (ok) {
+          chat.insertAdjacentHTML('beforeend', bubble(L, line, task.i));
+          bindChat(el, L);
+        }
+        const why = ok ? null : line[3].find(([sr]) => sr === chosen)?.[1];
+        return { ok, why, answer: `${D(line[1])} — ${line[2]}`, sayAfter: ok ? null : line[1] };
+      },
+    };
+  },
+
   intro(task, el) {
     const it = ITEMS[task.id];
     el.innerHTML = `<div class="intro">

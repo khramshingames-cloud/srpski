@@ -58,12 +58,13 @@ async function blobUrl(url) {
 // Тихо докачиваем всю озвучку выбранного голоса для офлайна (~10 МБ), по 4 файла за раз.
 // Service worker кладёт их в кэш; уже скачанные отдаются мгновенно.
 export async function warmAudio(voice = settings().voice) {
+  // флаг хранит, сколько файлов уже скачано: появились новые фразы — докачаем
   const flag = `srpski.audioWarm.${voice}`;
-  try { if (localStorage.getItem(flag) === '1') return; } catch {}
   if (!('serviceWorker' in navigator)) return;
   await navigator.serviceWorker.ready;
   let keys;
   try { keys = await (await fetch('audio/list.json', { cache: 'no-cache' })).json(); } catch { return; }
+  try { if (localStorage.getItem(flag) === String(keys.length)) return; } catch {}
   let i = 0, failed = 0;
   const worker = async () => {
     while (i < keys.length) {
@@ -72,15 +73,18 @@ export async function warmAudio(voice = settings().voice) {
     }
   };
   await Promise.all([worker(), worker(), worker(), worker()]);
-  if (!failed) try { localStorage.setItem(flag, '1'); } catch {}
+  if (!failed) try { localStorage.setItem(flag, String(keys.length)); } catch {}
 }
 
-export function preload(texts) {
-  for (const t of texts) blobUrl(fileFor(t)).catch(() => {});
+export function preload(texts, voice) {
+  for (const t of texts) blobUrl(fileFor(t, voice)).catch(() => {});
 }
 
+// speak() возвращает промис: true — фраза доиграла до конца, false — её прервали или не удалось
 let seq = 0;
+let finishPrev = () => {};
 export async function speak(text, opts = {}) {
+  finishPrev(false);
   const now = Date.now();
   const again = text === last.text && now - last.at < 10000;
   const slow = opts.slow ?? (again ? !last.slow : false);
@@ -90,13 +94,18 @@ export async function speak(text, opts = {}) {
   synth?.cancel();
   player.pause();
   let src;
-  try { src = await blobUrl(fileFor(text, opts.voice)); } catch { if (my === seq) ttsFallback(text); return; }
-  if (my !== seq) return; // пока грузилось, попросили другое слово
+  try { src = await blobUrl(fileFor(text, opts.voice)); } catch { if (my === seq) ttsFallback(text); return false; }
+  if (my !== seq) return false; // пока грузилось, попросили другое слово
   player.src = src;
   const rate = settings().rate * (slow ? 0.7 : 1);
   player.defaultPlaybackRate = rate;
   player.playbackRate = rate;
-  player.play().catch(() => {});
+  const done = new Promise((res) => {
+    finishPrev = res;
+    player.onended = () => res(true);
+  });
+  player.play().catch(() => finishPrev(false));
+  return done;
 }
 
-export function stop() { player.pause(); synth?.cancel(); }
+export function stop() { finishPrev(false); player.pause(); synth?.cancel(); }

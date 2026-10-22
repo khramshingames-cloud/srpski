@@ -44,6 +44,7 @@ const SKILLS = [
   { key: 'На слух', icon: '👂', types: ['audio'] },
   { key: 'Написание', icon: '✍️', types: ['letters', 'type'] },
   { key: 'Предложения', icon: '🧩', types: ['build', 'cloze'] },
+  { key: 'Диалоги', icon: '💬', types: ['chat', 'listen'] },
 ];
 const POS = { n: 'Существительные', v: 'Глаголы', adj: 'Прилагательные', adv: 'Наречия', pron: 'Местоимения', num: 'Числа', other: 'Служебные', phrase: 'Фразы', sentence: 'Предложения' };
 
