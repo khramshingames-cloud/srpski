@@ -1,7 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#0c4076"/>
-  <rect y="372" width="512" height="140" fill="#ffffff"/>
-  <rect y="372" width="512" height="140" rx="0" fill="#ffffff"/>
-  <path d="M0 372h512v28H0z" fill="#c6363c"/>
-  <text x="256" y="300" font-family="Arial, sans-serif" font-weight="700" font-size="240" fill="#fff" text-anchor="middle">Ћ</text>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FBE0CF"/>
+      <stop offset="1" stop-color="#F7F0E6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <g fill="#7FB49E">
+    <rect x="102" y="128" width="308" height="230" rx="97"/>
+    <path d="M154 317 225 348 128 415z"/>
+  </g>
+  <ellipse cx="165" cy="166" rx="25" ry="13" fill="#fff" opacity=".38"/>
+  <g fill="#3A332D">
+    <ellipse cx="202" cy="228" rx="13" ry="17"/>
+    <ellipse cx="310" cy="228" rx="13" ry="17"/>
+  </g>
+  <g fill="#fff">
+    <circle cx="205" cy="222" r="4.5"/>
+    <circle cx="313" cy="222" r="4.5"/>
+  </g>
+  <g fill="#F4A39A" opacity=".8">
+    <ellipse cx="169" cy="256" rx="26" ry="13"/>
+    <ellipse cx="343" cy="256" rx="26" ry="13"/>
+  </g>
+  <path d="M238 258q18 18 36 0" fill="none" stroke="#3A332D" stroke-width="8" stroke-linecap="round"/>
+  <path d="M404 140c-8-14-34-12-34 9 0 14 18 25 34 39 16-14 34-25 34-39 0-21-26-23-34-9z" fill="#E8866A"/>
+  <path d="M97 80l6 17 17 6-17 6-6 17-6-17-17-6 17-6z" fill="#E7B44F"/>
+  <path d="M430 304l4 11 11 4-11 4-4 11-4-11-11-4 11-4z" fill="#E7B44F"/>
 </svg>
