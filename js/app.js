@@ -1,8 +1,9 @@
-import { COURSE, ITEMS, LESSON } from './data.js';
+import { COURSE, ITEMS, LESSON, UNITS, UNIT } from './data.js';
 import * as store from './store.js';
 import { buildLessonLevels, buildReviewTasks, retryTasks, distractors, shuffle } from './engine.js';
-import { speak, stop, preload, VOICES } from './audio.js';
+import { speak, stop, preload, warmAudio, VOICES } from './audio.js';
 import { toCyr, letters, norm, stripDiacritics } from './translit.js';
+import { renderProgress, knowledge, cefr } from './progress.js';
 
 const $ = (sel, el = document) => el.querySelector(sel);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -10,6 +11,8 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const D = (s) => (store.settings().script === 'cyr' ? toCyr(s) : s);
 const say = (sr) => speak(sr);
 const autoSay = (sr) => { if (store.settings().autoplay) setTimeout(() => say(sr), 150); };
+// Лёгкая вибрация на Android (iPhone веб-приложениям вибрацию не даёт)
+const buzz = (p) => { try { navigator.vibrate?.(p); } catch {} };
 
 const TYPE_LABEL = { words: 'Слова', grammar: 'Правило', phrases: 'Фразы' };
 const view = $('#view');
@@ -19,20 +22,23 @@ let tab = 'home';
 
 function renderTabs() {
   document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
-  ({ home: renderHome, course: renderCourse, words: renderWords, settings: renderSettings })[tab]();
+  ({
+    home: renderHome, course: renderCourse, progress: () => renderProgress(view, { esc, D, say }),
+    words: renderWords, settings: renderSettings,
+  })[tab]();
+  window.scrollTo(0, 0);
 }
 document.querySelector('nav').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-tab]');
   if (b) { tab = b.dataset.tab; renderTabs(); }
 });
 
-function countKinds() {
-  const ids = store.learnedIds();
-  return {
-    words: ids.filter((id) => ITEMS[id].kind === 'word').length,
-    phrases: ids.filter((id) => ITEMS[id].kind === 'phrase').length,
-    sentences: ids.filter((id) => ITEMS[id].kind === 'sentence').length,
-  };
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 5) return ['Laku noć', '🌙'];
+  if (h < 11) return ['Dobro jutro', '☀️'];
+  if (h < 18) return ['Dobar dan', '🌤️'];
+  return ['Dobro veče', '🌆'];
 }
 
 function renderHome() {
@@ -40,12 +46,16 @@ function renderHome() {
   const reviewDone = store.reviewDoneToday();
   const reviewIds = store.pickReview();
   const next = store.nextLesson();
-  const c = countKinds();
   const due = store.dueCount();
   const lvl = next ? store.levelProgress(next.id)?.level || 0 : 0;
   // начатый урок можно продолжить в любой момент
   const lessonLocked = reviewIds.length > 0 && !reviewDone && !lvl;
   const st = store.streak();
+  const k = knowledge(), c = cefr(k.score);
+  const [hello, sun] = greeting();
+  const unit = next && UNIT[next.unit];
+  const unitLessons = unit ? unit.lessons : [];
+  const unitDone = unitLessons.filter((L) => store.isDone(L.id)).length;
 
   const reviewCard = learned === 0
     ? `<div class="step muted"><div class="step-n">1</div><div><h3>Повторение</h3><p>Появится после первого урока</p></div></div>`
@@ -57,23 +67,23 @@ function renderHome() {
       ? `<div class="step ok"><div class="step-n">✓</div><div><h3>Повторение сделано</h3>
           <button class="link" data-act="extra-review">Ещё одно повторение</button></div></div>`
       : `<div class="step active"><div class="step-n">1</div><div><h3>Повторение</h3>
-          <p>${reviewIds.length} шт. · пора повторить: ${due} · ~${Math.max(2, Math.round(reviewIds.length * 0.15))} мин</p>
+          <p>${reviewIds.length} карточек · ~${Math.max(2, Math.round(reviewIds.length * 0.15))} мин${due ? ` · пора: ${due}` : ''}</p>
           <button class="btn" data-act="review">Начать повторение</button></div></div>`;
 
   const preview = next?.type === 'grammar'
-    ? `${next.rules.map((r) => esc(r.title)).join(' · ')}<br><small>${next.exercises.length} упражнений из знакомых слов</small>`
-    : next ? next.itemIds.filter((id) => ITEMS[id].kind !== 'sentence').slice(0, 6)
-    .map((id) => `${ITEMS[id].emoji} ${esc(D(ITEMS[id].sr))}`).join(' · ') : '';
+    ? `${next.rules.map((r) => esc(r.title)).join(' · ')}`
+    : next ? next.itemIds.filter((id) => ITEMS[id].kind !== 'sentence').slice(0, 5)
+      .map((id) => `<span class="chip">${ITEMS[id].emoji} ${esc(D(ITEMS[id].sr))}</span>`).join('') : '';
 
   const lessonCard = !next
-    ? `<div class="step ok"><div class="step-n">🏁</div><div><h3>Первые 100 слов пройдены!</h3><p>Продолжай ежедневное повторение. Следующий блок скоро.</p></div></div>`
+    ? `<div class="step ok"><div class="step-n">🏁</div><div><h3>Весь курс пройден!</h3><p>Продолжай ежедневное повторение — оно держит слова в памяти.</p></div></div>`
     : `<div class="step ${lessonLocked ? 'muted' : 'active'}"><div class="step-n">2</div><div>
         <span class="badge ${next.type}">${TYPE_LABEL[next.type]}</span>
         <h3>${esc(next.title)}</h3>
-        <p class="preview">${preview}</p>
+        <div class="preview">${preview}</div>
         ${levelDots(next.id)}
         ${lessonLocked
-          ? `<p class="hint">Сначала повторение 👆</p>`
+          ? `<p class="hint">Сначала повторение — так новое ляжет на крепкую базу 👆</p>`
           : `<button class="btn" data-act="lesson" data-id="${next.id}">${lvl
             ? `Продолжить: уровень ${lvl + 1}`
             : store.lessonsToday() ? 'Ещё урок' : 'Начать урок'}</button>`}
@@ -81,14 +91,18 @@ function renderHome() {
 
   view.innerHTML = `
     <section class="hello">
-      <div><h2>Zdravo! 👋</h2><p class="muted-t">Сегодня: повторение → новый урок</p></div>
+      <div><p class="hello-sub">${sun} ${hello}!</p><h2>Учим сербский</h2></div>
       <div class="streak" title="Дней подряд">🔥 ${st}</div>
     </section>
-    <section class="stats">
-      <div><b>${c.words}</b><span>слов</span></div>
-      <div><b>${c.phrases}</b><span>фраз</span></div>
-      <div><b>${c.sentences}</b><span>предложений</span></div>
-    </section>
+    <button class="card level-mini" data-act="progress">
+      <div class="lv-badge sm">${c.cur.id}</div>
+      <div class="lm-body">
+        <div class="lm-row"><b>${c.cur.name}</b><span>${c.next ? `${Math.round(c.pct * 100)}% до ${c.next.id}` : 'максимум'}</span></div>
+        <div class="meter"><i style="width:${Math.round(c.pct * 100)}%"></i></div>
+        <small>${k.known + k.learning} слов · ${k.phrases + k.phrasesLearning} фраз · ${k.grammar} тем</small>
+      </div>
+    </button>
+    ${unit ? `<p class="unit-line">${unit.emoji} Блок ${UNITS.indexOf(unit) + 1} · ${esc(unit.title)} <span>${unitDone}/${unitLessons.length}</span></p>` : ''}
     ${reviewCard}
     ${lessonCard}`;
 
@@ -98,12 +112,13 @@ function renderHome() {
     if (b.dataset.act === 'review') startReview();
     if (b.dataset.act === 'extra-review') startReview(true);
     if (b.dataset.act === 'lesson') startLesson(b.dataset.id);
+    if (b.dataset.act === 'progress') { tab = 'progress'; renderTabs(); }
   };
 }
 
 const levelsOf = (lessonId) => buildLessonLevels(lessonId);
 
-// Кружки уровней урока: ● пройден, ○ впереди
+// Кружки уровней урока: пройден, текущий, впереди
 function levelDots(lessonId) {
   const levels = levelsOf(lessonId);
   const done = store.isDone(lessonId) && !store.levelProgress(lessonId) ? levels.length : store.levelProgress(lessonId)?.level || 0;
@@ -112,19 +127,33 @@ function levelDots(lessonId) {
 
 function renderCourse() {
   const next = store.nextLesson();
-  view.innerHTML = `<h2 class="page-h">Курс: первые 100 слов</h2>
-    <p class="muted-t page-sub">10 уроков слов · 3 урока правил · 2 урока фраз</p>
-    <ul class="course">${COURSE.map((L) => {
-      const done = store.isDone(L.id), isNext = next && next.id === L.id;
-      const n = L.itemIds.filter((id) => ITEMS[id].kind !== 'sentence').length;
-      const icon = done ? '✓' : isNext ? '▶' : '🔒';
-      return `<li class="${done ? 'done' : isNext ? 'next' : 'locked'}" data-id="${L.id}">
-        <span class="c-ico">${icon}</span>
-        <div><span class="badge ${L.type}">${TYPE_LABEL[L.type]}</span> <b>${esc(L.title)}</b>
-        <small>${L.type === 'phrases' ? n + ' фраз' : n + ' слов'}${L.exercises ? ' · ' + L.exercises.length + ' упражнений' : ''}</small>
-        ${done || isNext ? levelDots(L.id) : ''}</div>
-      </li>`;
-    }).join('')}</ul>`;
+  const total = { words: 0, grammar: 0, phrases: 0 };
+  COURSE.forEach((L) => total[L.type]++);
+  view.innerHTML = `<h2 class="page-h">Курс</h2>
+    <p class="muted-t page-sub">${UNITS.length} блоков · ${total.words} уроков слов · ${total.grammar} правил · ${total.phrases} уроков фраз</p>
+    ${UNITS.map((u, ui) => {
+      const done = u.lessons.filter((L) => store.isDone(L.id)).length;
+      const open = u.lessons.some((L) => L === next) || (done > 0 && done < u.lessons.length);
+      return `<details class="unit" ${open ? 'open' : ''}>
+        <summary>
+          <span class="u-emoji">${u.emoji}</span>
+          <div class="u-t"><small>Блок ${ui + 1} · ${u.cefr}</small><b>${esc(u.title)}</b>
+            <div class="meter thin"><i style="width:${Math.round((done / u.lessons.length) * 100)}%"></i></div></div>
+          <span class="u-n">${done}/${u.lessons.length}</span>
+        </summary>
+        <ul class="course">${u.lessons.map((L) => {
+          const isDone = store.isDone(L.id), isNext = next && next.id === L.id;
+          const n = L.itemIds.filter((id) => ITEMS[id].kind !== 'sentence').length;
+          const icon = isDone ? '✓' : isNext ? '▶' : '·';
+          return `<li class="${isDone ? 'done' : isNext ? 'next' : 'locked'}" data-id="${L.id}">
+            <span class="c-ico">${icon}</span>
+            <div><span class="badge ${L.type}">${TYPE_LABEL[L.type]}</span> <b>${esc(L.title)}</b>
+            <small>${L.type === 'phrases' ? n + ' фраз' : L.type === 'grammar' ? L.exercises.length + ' упражнений' : n + ' слов'}</small>
+            ${isDone || isNext ? levelDots(L.id) : ''}</div>
+          </li>`;
+        }).join('')}</ul>
+      </details>`;
+    }).join('')}`;
   view.onclick = (e) => {
     const li = e.target.closest('li[data-id]');
     if (!li || li.classList.contains('locked')) return;
@@ -232,9 +261,9 @@ function renderSettings() {
     </div>
     <div class="set about">
       <label>Как устроен день</label>
-      <p>1. <b>Повторение</b>: ${s.reviewSize} карточек из уже выученного. Первыми идут те, кому «пора», потом давно не виденные. Ошибся — карточка вернётся через пару шагов, а интервал слова сбросится. Без ошибок — следующий показ через 3, 7, 17… дней.</p>
-      <p>2. <b>Новый урок</b>: 10 слов. Знакомство пятёрками, потом круги: выбор перевода → выбор сербского → на слух → из букв → контрольный прогон.</p>
-      <p>3. Каждые 3 урока слов — <b>урок правил</b>, после 7-го и 10-го — <b>урок фраз</b>.</p>
+      <p>1. <b>Повторение</b>: ${s.reviewSize} карточек из уже выученного. Первыми идут те, кому «пора», потом давно не виденные. Ошибся — карточка вернётся через пару шагов, а слово будет приходить чаще. Без ошибок — следующий показ через 3, 7, 17… дней.</p>
+      <p>2. <b>Новый урок</b>: 10 слов за 5 коротких уровней — знакомство, пары, на слух, по буквам, финал. Можно остановиться после любого уровня.</p>
+      <p>3. Курс — 12 блоков от A0 до A2: 500+ слов, 13 тем грамматики и 16 уроков полезных фраз. Правила и фразы идут сразу после слов, которые для них нужны.</p>
     </div>`;
 
   view.onclick = (e) => {
@@ -243,7 +272,7 @@ function renderSettings() {
       const k = seg.parentElement.dataset.k;
       store.setSetting(k, seg.dataset.v);
       renderSettings();
-      if (k === 'voice') speak('Dobar dan, kako si?', { slow: false });
+      if (k === 'voice') { speak('Dobar dan, kako si?', { slow: false }); warmAudio(); }
       return;
     }
     const b = e.target.closest('[data-act]');
@@ -308,7 +337,7 @@ function startLesson(lessonId) {
     tasks: level.tasks,
     pool: [...new Set([...store.learnedIds(), ...L.itemIds])],
     onDone(errors, seen) {
-      const all = store.finishLevel(lessonId, levels.length, errors, [...seen]);
+      const all = store.finishLevel(lessonId, n, levels.length, errors, [...seen]);
       const dots = levelDots(lessonId);
       if (!all) {
         const nx = levels[n + 1];
@@ -331,7 +360,7 @@ function startLesson(lessonId) {
 }
 
 function runSession({ title, tasks, pool, onDone }) {
-  const S = { tasks: [...tasks], i: 0, errors: {}, seen: new Set(), mistakes: 0, answered: 0 };
+  const S = { tasks: [...tasks], i: 0, errors: {}, seen: new Set(), mistakes: 0, answered: 0, started: Date.now() };
   // заранее подгружаем звук всех карточек сессии — без пауз и пропусков
   preload([...new Set(tasks.flatMap((t) => [
     ...(t.id ? [ITEMS[t.id].sr] : []), ...(t.ids || []).map((id) => ITEMS[id].sr),
@@ -371,6 +400,7 @@ function runSession({ title, tasks, pool, onDone }) {
     const R = RENDER[task.t](task, card, pool, {
       ready(on) { go.disabled = !on; },
       finish(wrongIds) {
+        task.ids.forEach((id) => store.logAnswer('match', !wrongIds.includes(id), id));
         if (wrongIds.length) { wrongIds.forEach(markError); requeue(task, wrongIds); S.mistakes += wrongIds.length; }
         S.answered++;
         go.textContent = 'Дальше'; go.disabled = false; go.onclick = advance;
@@ -387,6 +417,8 @@ function runSession({ title, tasks, pool, onDone }) {
         const res = R.check();
         S.answered++;
         const errId = task.id || task.ex?.id;
+        store.logAnswer(task.t, res.ok, task.id);
+        buzz(res.ok ? 12 : [30, 40, 30]);
         if (res.ok) {
           foot.className = 'good';
           fb.innerHTML = `<b>${res.near ? 'Почти! ' : pickPraise()}</b>${res.near ? `<span>Правильно: ${esc(res.answer)}</span>` : ''}`;
@@ -404,6 +436,7 @@ function runSession({ title, tasks, pool, onDone }) {
   function advance() { S.i++; show(); }
 
   function finish() {
+    store.addTime(Date.now() - S.started);
     const res = onDone(S.errors, S.seen) || {};
     const stars = S.mistakes === 0 ? 3 : S.mistakes <= 2 ? 2 : 1;
     const hard = Object.keys(S.errors).filter((id) => ITEMS[id]);
@@ -718,4 +751,6 @@ function cyrTextNodes(root) {
 renderTabs();
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.register('sw.js').catch(() => {});
+  // озвучку для офлайна качаем, когда приложение уже показалось
+  setTimeout(() => warmAudio(), 4000);
 }

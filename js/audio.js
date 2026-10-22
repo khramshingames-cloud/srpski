@@ -55,6 +55,26 @@ async function blobUrl(url) {
   return blobs.get(url);
 }
 
+// Тихо докачиваем всю озвучку выбранного голоса для офлайна (~10 МБ), по 4 файла за раз.
+// Service worker кладёт их в кэш; уже скачанные отдаются мгновенно.
+export async function warmAudio(voice = settings().voice) {
+  const flag = `srpski.audioWarm.${voice}`;
+  try { if (localStorage.getItem(flag) === '1') return; } catch {}
+  if (!('serviceWorker' in navigator)) return;
+  await navigator.serviceWorker.ready;
+  let keys;
+  try { keys = await (await fetch('audio/list.json', { cache: 'no-cache' })).json(); } catch { return; }
+  let i = 0, failed = 0;
+  const worker = async () => {
+    while (i < keys.length) {
+      const k = keys[i++];
+      try { const r = await fetch(`audio/${voice}/${k}.mp3`); if (!r.ok) failed++; } catch { failed++; }
+    }
+  };
+  await Promise.all([worker(), worker(), worker(), worker()]);
+  if (!failed) try { localStorage.setItem(flag, '1'); } catch {}
+}
+
 export function preload(texts) {
   for (const t of texts) blobUrl(fileFor(t)).catch(() => {});
 }

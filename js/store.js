@@ -6,7 +6,7 @@
 
 import { COURSE, ITEMS } from './data.js';
 
-const KEY = 'srpski.v1';
+const KEY = 'srpski.v1'; // имя ключа не меняем, версия данных — внутри
 const MAX_INTERVAL = 60;
 
 const DEFAULTS = {
@@ -17,15 +17,30 @@ const DEFAULTS = {
   voice: 'f',        // f — Софи, m — Никола
 };
 
-let state = load();
+const fresh = (settings = DEFAULTS) => ({ v: 2, items: {}, done: [], days: {}, partial: {}, stats: {}, settings: { ...settings } });
+
+// v1 → v2: курс расширен до 500 слов и уроки переставлены. Выученные слова сохраняем (они по тексту),
+// а пройденными считаем уроки, все слова которых уже выучены.
+function migrate(s) {
+  if (s.v === 1) {
+    s = { ...fresh(s.settings), items: s.items, days: s.days };
+    s.done = COURSE.filter((L) => L.itemIds.length && L.itemIds.every((id) => s.items[id])).map((L) => L.id);
+  }
+  return s;
+}
 
 function load() {
   try {
-    const s = JSON.parse(localStorage.getItem(KEY));
-    if (s && s.v === 1) return { ...s, settings: { ...DEFAULTS, ...s.settings } };
+    const raw = JSON.parse(localStorage.getItem(KEY));
+    if (raw && (raw.v === 1 || raw.v === 2)) {
+      const s = migrate(raw);
+      return { ...fresh(), ...s, settings: { ...DEFAULTS, ...s.settings } };
+    }
   } catch {}
-  return { v: 1, items: {}, done: [], days: {}, settings: { ...DEFAULTS } };
+  return fresh();
 }
+
+let state = load();
 
 export function save() {
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
@@ -35,14 +50,14 @@ export const settings = () => state.settings;
 export function setSetting(k, v) { state.settings[k] = v; save(); }
 
 export function resetAll() {
-  state = { v: 1, items: {}, done: [], days: {}, settings: state.settings };
+  state = fresh(state.settings);
   save();
 }
 export const exportState = () => JSON.stringify(state);
 export function importState(json) {
-  const s = JSON.parse(json);
-  if (s.v !== 1) throw new Error('bad version');
-  state = { ...s, settings: { ...DEFAULTS, ...s.settings } };
+  const s = migrate(JSON.parse(json));
+  if (s.v !== 2) throw new Error('bad version');
+  state = { ...fresh(), ...s, settings: { ...DEFAULTS, ...s.settings } };
   save();
 }
 
@@ -120,16 +135,39 @@ export function finishLesson(lessonId) {
   save();
 }
 
+// ---- статистика ----
+// По типам карточек и частям речи копим [верно, ошибок]; по дням — карточки, верные, время.
+export function logAnswer(type, ok, id) {
+  const st = (state.stats ||= {});
+  const bump = (group, key) => {
+    const g = (st[group] ||= {});
+    const v = (g[key] ||= [0, 0]);
+    v[ok ? 0 : 1]++;
+  };
+  bump('types', type);
+  if (id && ITEMS[id]) bump('pos', ITEMS[id].pos);
+  const d = day();
+  d.cards = (d.cards || 0) + 1;
+  if (ok) d.ok = (d.ok || 0) + 1;
+}
+export function addTime(ms) {
+  const d = day();
+  d.ms = (d.ms || 0) + Math.min(ms, 60 * 60 * 1000);
+  save();
+}
+export const stats = () => state.stats || {};
+export const daysLog = () => state.days;
+
 // ---- уровни внутри урока ----
 // Пока урок не пройден до конца, копим ошибки и показанные слова; в повторение всё уходит после финала.
 export const levelProgress = (lessonId) => state.partial?.[lessonId] || null;
 
-export function finishLevel(lessonId, levelCount, errors, seenIds) {
+export function finishLevel(lessonId, levelIndex, levelCount, errors, seenIds) {
   state.partial ||= {};
   const p = (state.partial[lessonId] ||= { level: 0, errors: {}, seen: [] });
   for (const [k, v] of Object.entries(errors)) p.errors[k] = (p.errors[k] || 0) + v;
   p.seen = [...new Set([...p.seen, ...seenIds])];
-  p.level++;
+  p.level = levelIndex + 1;
   const d = day();
   d.levels = (d.levels || 0) + 1;
   if (p.level < levelCount) { save(); return null; }

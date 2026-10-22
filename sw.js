@@ -1,32 +1,21 @@
 // Офлайн-режим.
 // Код и стили: сначала сеть в обход HTTP-кэша браузера (иначе можно получить смесь старых
 // и новых модулей), без сети — из кэша.
-// Озвучка: сначала кэш (файлы не меняются), все mp3 скачиваются заранее при установке.
-// Озвучка лежит в отдельном кэше, чтобы обновление кода не скачивало её заново.
+// Озвучка: сначала кэш, в отдельном хранилище — обновление кода её не перекачивает.
+// Приложение само докачивает озвучку выбранного голоса в фоне (warmAudio в audio.js).
 // После перегенерации озвучки — поднять версию AUDIO.
-const CACHE = 'srpski-v3';
+const CACHE = 'srpski-v4';
 const AUDIO = 'srpski-audio-v1';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
-  'js/app.js', 'js/data.js', 'js/store.js', 'js/engine.js', 'js/audio.js', 'js/translit.js',
+  'js/app.js', 'js/data.js', 'js/store.js', 'js/engine.js', 'js/audio.js', 'js/translit.js', 'js/progress.js',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
 ];
-const VOICES = ['f', 'm'];
-
-async function precache() {
-  await (await caches.open(CACHE)).addAll(SHELL.map((u) => new Request(u, { cache: 'no-cache' })));
-  try {
-    const c = await caches.open(AUDIO);
-    const have = new Set((await c.keys()).map((r) => new URL(r.url).pathname));
-    const keys = await (await fetch('audio/list.json')).json();
-    const files = VOICES.flatMap((v) => keys.map((k) => `audio/${v}/${k}.mp3`));
-    // по одному, чтобы один сбой не ломал установку
-    await Promise.all(files.filter((f) => !have.has(new URL(f, self.registration.scope).pathname)).map((f) => c.add(f).catch(() => {})));
-  } catch {}
-}
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(precache().then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE)
+    .then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'no-cache' }))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
