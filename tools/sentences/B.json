@@ -1,0 +1,824 @@
+[
+ {
+  "w": "kuća",
+  "sr": "Moja kuća je tamo.",
+  "ru": "Мой дом вон там.",
+  "form": "kuća"
+ },
+ {
+  "w": "stan",
+  "sr": "Živim u stanu u Beogradu.",
+  "ru": "Я живу в квартире в Белграде.",
+  "form": "stanu"
+ },
+ {
+  "w": "soba",
+  "sr": "Ovo je moja soba.",
+  "ru": "Это моя комната.",
+  "form": "soba"
+ },
+ {
+  "w": "kuhinja",
+  "sr": "Kafa je u kuhinji.",
+  "ru": "Кофе на кухне.",
+  "form": "kuhinji"
+ },
+ {
+  "w": "kupatilo",
+  "sr": "Izvinite, gde je kupatilo?",
+  "ru": "Извините, где ванная?",
+  "form": "kupatilo"
+ },
+ {
+  "w": "sprat",
+  "sr": "Stan je na petom spratu.",
+  "ru": "Квартира на пятом этаже.",
+  "form": "spratu"
+ },
+ {
+  "w": "vrata",
+  "sr": "Vrata su tamo.",
+  "ru": "Дверь вон там.",
+  "form": "Vrata"
+ },
+ {
+  "w": "prozor",
+  "sr": "Soba ima dva prozora.",
+  "ru": "В комнате два окна.",
+  "form": "prozora"
+ },
+ {
+  "w": "ključ",
+  "sr": "Gde je moj ključ?",
+  "ru": "Где мой ключ?",
+  "form": "ključ"
+ },
+ {
+  "w": "adresa",
+  "sr": "Imate li adresu stana?",
+  "ru": "У вас есть адрес квартиры?",
+  "form": "adresu"
+ },
+ {
+  "w": "na",
+  "sr": "Ključ je na prozoru.",
+  "ru": "Ключ на окне.",
+  "form": "na"
+ },
+ {
+  "w": "kod",
+  "sr": "Ključ je kod mene.",
+  "ru": "Ключ у меня.",
+  "form": "kod"
+ },
+ {
+  "w": "sa",
+  "sr": "Kafu sa mlekom, molim.",
+  "ru": "Кофе с молоком, пожалуйста.",
+  "form": "sa"
+ },
+ {
+  "w": "bez",
+  "sr": "Čaj bez šećera, molim.",
+  "ru": "Чай без сахара, пожалуйста.",
+  "form": "bez"
+ },
+ {
+  "w": "za",
+  "sr": "Ovo je za tebe.",
+  "ru": "Это для тебя.",
+  "form": "za"
+ },
+ {
+  "w": "od",
+  "sr": "Restoran radi od osam.",
+  "ru": "Ресторан работает с восьми.",
+  "form": "od"
+ },
+ {
+  "w": "do",
+  "sr": "Radim do pet sati.",
+  "ru": "Я работаю до пяти часов.",
+  "form": "do"
+ },
+ {
+  "w": "levo",
+  "sr": "Kupatilo je levo.",
+  "ru": "Ванная слева.",
+  "form": "levo"
+ },
+ {
+  "w": "desno",
+  "sr": "Kuhinja je desno.",
+  "ru": "Кухня справа.",
+  "form": "desno"
+ },
+ {
+  "w": "pravo",
+  "sr": "Idite pravo do restorana.",
+  "ru": "Идите прямо до ресторана.",
+  "form": "pravo"
+ },
+ {
+  "w": "prvi",
+  "sr": "Ovo je moj prvi dan ovde.",
+  "ru": "Это мой первый день здесь.",
+  "form": "prvi"
+ },
+ {
+  "w": "drugi",
+  "sr": "Stan je na drugom spratu.",
+  "ru": "Квартира на втором этаже.",
+  "form": "drugom"
+ },
+ {
+  "w": "treći",
+  "sr": "Soba je na trećem spratu.",
+  "ru": "Комната на третьем этаже.",
+  "form": "trećem"
+ },
+ {
+  "w": "četvrti",
+  "sr": "Moja soba je četvrta levo.",
+  "ru": "Моя комната — четвёртая слева.",
+  "form": "četvrta"
+ },
+ {
+  "w": "grad",
+  "sr": "Živimo u gradu.",
+  "ru": "Мы живём в городе.",
+  "form": "gradu"
+ },
+ {
+  "w": "ulica",
+  "sr": "Kako se zove ulica?",
+  "ru": "Как называется улица?",
+  "form": "ulica"
+ },
+ {
+  "w": "trg",
+  "sr": "Kafić je na trgu.",
+  "ru": "Кафе на площади.",
+  "form": "trgu"
+ },
+ {
+  "w": "centar",
+  "sr": "Sutra idem u centar.",
+  "ru": "Завтра я еду в центр.",
+  "form": "centar"
+ },
+ {
+  "w": "stanica",
+  "sr": "Izvinite, gde je stanica?",
+  "ru": "Извините, где остановка?",
+  "form": "stanica"
+ },
+ {
+  "w": "autobus",
+  "sr": "Autobus ide do centra.",
+  "ru": "Автобус идёт до центра.",
+  "form": "Autobus"
+ },
+ {
+  "w": "tramvaj",
+  "sr": "Idemo tramvajem na trg.",
+  "ru": "Едем на площадь на трамвае.",
+  "form": "tramvajem"
+ },
+ {
+  "w": "taksi",
+  "sr": "Taksi je tamo, idemo!",
+  "ru": "Такси вон там, поехали!",
+  "form": "Taksi"
+ },
+ {
+  "w": "auto",
+  "sr": "Imate li auto?",
+  "ru": "У вас есть машина?",
+  "form": "auto"
+ },
+ {
+  "w": "karta",
+  "sr": "Jednu kartu, molim.",
+  "ru": "Один билет, пожалуйста.",
+  "form": "kartu"
+ },
+ {
+  "w": "čovek",
+  "sr": "Ko je taj čovek?",
+  "ru": "Кто этот человек?",
+  "form": "čovek"
+ },
+ {
+  "w": "žena",
+  "sr": "Moja žena je iz Rusije.",
+  "ru": "Моя жена из России.",
+  "form": "žena"
+ },
+ {
+  "w": "muž",
+  "sr": "Njen muž radi u Beogradu.",
+  "ru": "Её муж работает в Белграде.",
+  "form": "muž"
+ },
+ {
+  "w": "dete",
+  "sr": "Dete pije mleko.",
+  "ru": "Ребёнок пьёт молоко.",
+  "form": "Dete"
+ },
+ {
+  "w": "deca",
+  "sr": "Deca jedu voće.",
+  "ru": "Дети едят фрукты.",
+  "form": "Deca"
+ },
+ {
+  "w": "prijatelj",
+  "sr": "Ovo je moj prijatelj Marko.",
+  "ru": "Это мой друг Марко.",
+  "form": "prijatelj"
+ },
+ {
+  "w": "devojka",
+  "sr": "Njegova devojka je iz Srbije.",
+  "ru": "Его девушка из Сербии.",
+  "form": "devojka"
+ },
+ {
+  "w": "dečko",
+  "sr": "Ona ima dečka.",
+  "ru": "У неё есть парень.",
+  "form": "dečka"
+ },
+ {
+  "w": "porodica",
+  "sr": "Moja porodica živi u Rusiji.",
+  "ru": "Моя семья живёт в России.",
+  "form": "porodica"
+ },
+ {
+  "w": "komšija",
+  "sr": "Moj komšija je iz Beograda.",
+  "ru": "Мой сосед из Белграда.",
+  "form": "komšija"
+ },
+ {
+  "w": "dobar",
+  "sr": "Ovo je dobar restoran.",
+  "ru": "Это хороший ресторан.",
+  "form": "dobar"
+ },
+ {
+  "w": "loš",
+  "sr": "Danas je loše vreme.",
+  "ru": "Сегодня плохая погода.",
+  "form": "loše"
+ },
+ {
+  "w": "veliki",
+  "sr": "Imamo veliki stan.",
+  "ru": "У нас большая квартира.",
+  "form": "veliki"
+ },
+ {
+  "w": "mali",
+  "sr": "Imamo mali stan.",
+  "ru": "У нас маленькая квартира.",
+  "form": "mali"
+ },
+ {
+  "w": "novi",
+  "sr": "Ovo je naš novi stan.",
+  "ru": "Это наша новая квартира.",
+  "form": "novi"
+ },
+ {
+  "w": "stari",
+  "sr": "Ovo je stara kuća.",
+  "ru": "Это старый дом.",
+  "form": "stara"
+ },
+ {
+  "w": "lep",
+  "sr": "Kako lep dan!",
+  "ru": "Какой прекрасный день!",
+  "form": "lep"
+ },
+ {
+  "w": "topao",
+  "sr": "Čaj je još topao.",
+  "ru": "Чай ещё тёплый.",
+  "form": "topao"
+ },
+ {
+  "w": "hladan",
+  "sr": "Hoću hladnu vodu, molim.",
+  "ru": "Холодной воды, пожалуйста.",
+  "form": "hladnu"
+ },
+ {
+  "w": "važan",
+  "sr": "Danas je važan dan.",
+  "ru": "Сегодня важный день.",
+  "form": "važan"
+ },
+ {
+  "w": "ovaj",
+  "sr": "Ovaj sir je ukusan.",
+  "ru": "Этот сыр вкусный.",
+  "form": "Ovaj"
+ },
+ {
+  "w": "moj",
+  "sr": "Moj muž je ovde.",
+  "ru": "Мой муж здесь.",
+  "form": "Moj"
+ },
+ {
+  "w": "tvoj",
+  "sr": "Je li ovo tvoja kafa?",
+  "ru": "Это твой кофе?",
+  "form": "tvoja"
+ },
+ {
+  "w": "vrlo",
+  "sr": "Ovo je vrlo ukusno.",
+  "ru": "Это очень вкусно.",
+  "form": "vrlo"
+ },
+ {
+  "w": "jako",
+  "sr": "Kafa je jako dobra.",
+  "ru": "Кофе очень хороший.",
+  "form": "jako"
+ },
+ {
+  "w": "malo",
+  "sr": "Malo mleka, molim.",
+  "ru": "Немного молока, пожалуйста.",
+  "form": "Malo"
+ },
+ {
+  "w": "mnogo",
+  "sr": "Hvala vam mnogo!",
+  "ru": "Большое вам спасибо!",
+  "form": "mnogo"
+ },
+ {
+  "w": "sve",
+  "sr": "Sve je dobro.",
+  "ru": "Всё хорошо.",
+  "form": "Sve"
+ },
+ {
+  "w": "nešto",
+  "sr": "Imate li nešto bez mesa?",
+  "ru": "У вас есть что-нибудь без мяса?",
+  "form": "nešto"
+ },
+ {
+  "w": "ništa",
+  "sr": "Ne razumem ništa.",
+  "ru": "Я ничего не понимаю.",
+  "form": "ništa"
+ },
+ {
+  "w": "uvek",
+  "sr": "Ona uvek pije čaj.",
+  "ru": "Она всегда пьёт чай.",
+  "form": "uvek"
+ },
+ {
+  "w": "nikad",
+  "sr": "On nikad ne pije pivo.",
+  "ru": "Он никогда не пьёт пиво.",
+  "form": "nikad"
+ },
+ {
+  "w": "možda",
+  "sr": "Možda sutra, ne danas.",
+  "ru": "Может, завтра, не сегодня.",
+  "form": "Možda"
+ },
+ {
+  "w": "šta",
+  "sr": "Šta hoćeš da piješ?",
+  "ru": "Что ты будешь пить?",
+  "form": "Šta"
+ },
+ {
+  "w": "kada",
+  "sr": "Kada radi restoran?",
+  "ru": "Когда работает ресторан?",
+  "form": "Kada"
+ },
+ {
+  "w": "zašto",
+  "sr": "Zašto ne piješ kafu?",
+  "ru": "Почему ты не пьёшь кофе?",
+  "form": "Zašto"
+ },
+ {
+  "w": "koji",
+  "sr": "Koji autobus ide u centar?",
+  "ru": "Какой автобус идёт в центр?",
+  "form": "Koji"
+ },
+ {
+  "w": "kuda",
+  "sr": "Kuda ideš sutra?",
+  "ru": "Куда ты идёшь завтра?",
+  "form": "Kuda"
+ },
+ {
+  "w": "čiji",
+  "sr": "Čiji je ovo ključ?",
+  "ru": "Чей это ключ?",
+  "form": "Čiji"
+ },
+ {
+  "w": "jer",
+  "sr": "Pijem čaj, jer nema kafe.",
+  "ru": "Пью чай, потому что кофе нет.",
+  "form": "jer"
+ },
+ {
+  "w": "ali",
+  "sr": "Skupo je, ali ukusno.",
+  "ru": "Дорого, но вкусно.",
+  "form": "ali"
+ },
+ {
+  "w": "a",
+  "sr": "A ti, odakle si?",
+  "ru": "А ты откуда?",
+  "form": "A"
+ },
+ {
+  "w": "ili",
+  "sr": "Hoćeš kafu ili čaj?",
+  "ru": "Хочешь кофе или чай?",
+  "form": "ili"
+ },
+ {
+  "w": "moći",
+  "sr": "Mogu li da vam pomognem?",
+  "ru": "Могу я вам помочь?",
+  "form": "Mogu"
+ },
+ {
+  "w": "morati",
+  "sr": "Moram da idem.",
+  "ru": "Мне нужно идти.",
+  "form": "Moram"
+ },
+ {
+  "w": "trebati",
+  "sr": "Treba mi taksi.",
+  "ru": "Мне нужно такси.",
+  "form": "Treba"
+ },
+ {
+  "w": "želeti",
+  "sr": "Želite li kafu?",
+  "ru": "Хотите кофе?",
+  "form": "Želite"
+ },
+ {
+  "w": "misliti",
+  "sr": "Mislim da je skupo.",
+  "ru": "Думаю, это дорого.",
+  "form": "Mislim"
+ },
+ {
+  "w": "pitati",
+  "sr": "Mogu li nešto da pitam?",
+  "ru": "Можно кое-что спросить?",
+  "form": "pitam"
+ },
+ {
+  "w": "reći",
+  "sr": "Možete li mi reći gde je stanica?",
+  "ru": "Не подскажете, где остановка?",
+  "form": "reći"
+ },
+ {
+  "w": "čekati",
+  "sr": "Čekamo tramvaj na stanici.",
+  "ru": "Мы ждём трамвай на остановке.",
+  "form": "Čekamo"
+ },
+ {
+  "w": "tražiti",
+  "sr": "Tražim ključ od stana.",
+  "ru": "Я ищу ключ от квартиры.",
+  "form": "Tražim"
+ },
+ {
+  "w": "pomoći",
+  "sr": "Možete li mi pomoći?",
+  "ru": "Вы можете мне помочь?",
+  "form": "pomoći"
+ },
+ {
+  "w": "posao",
+  "sr": "Imam novi posao.",
+  "ru": "У меня новая работа.",
+  "form": "posao"
+ },
+ {
+  "w": "šef",
+  "sr": "Moj šef je dobar čovek.",
+  "ru": "Мой начальник — хороший человек.",
+  "form": "šef"
+ },
+ {
+  "w": "kolega",
+  "sr": "Ovo je moj kolega.",
+  "ru": "Это мой коллега.",
+  "form": "kolega"
+ },
+ {
+  "w": "sastanak",
+  "sr": "Sastanak je sutra u devet.",
+  "ru": "Совещание завтра в девять.",
+  "form": "Sastanak"
+ },
+ {
+  "w": "škola",
+  "sr": "Deca su u školi.",
+  "ru": "Дети в школе.",
+  "form": "školi"
+ },
+ {
+  "w": "učiti",
+  "sr": "Ja učim srpski.",
+  "ru": "Я учу сербский.",
+  "form": "učim"
+ },
+ {
+  "w": "jezik",
+  "sr": "Srpski je lep jezik.",
+  "ru": "Сербский — красивый язык.",
+  "form": "jezik"
+ },
+ {
+  "w": "reč",
+  "sr": "Ne znam tu reč.",
+  "ru": "Я не знаю этого слова.",
+  "form": "reč"
+ },
+ {
+  "w": "pitanje",
+  "sr": "Imam jedno pitanje.",
+  "ru": "У меня один вопрос.",
+  "form": "pitanje"
+ },
+ {
+  "w": "odgovor",
+  "sr": "Hvala na odgovoru.",
+  "ru": "Спасибо за ответ.",
+  "form": "odgovoru"
+ },
+ {
+  "w": "spavati",
+  "sr": "Deca spavaju u sobi.",
+  "ru": "Дети спят в комнате.",
+  "form": "spavaju"
+ },
+ {
+  "w": "ustati",
+  "sr": "Moram da ustanem u sedam.",
+  "ru": "Мне надо встать в семь.",
+  "form": "ustanem"
+ },
+ {
+  "w": "kuvati",
+  "sr": "Muž danas kuva ručak.",
+  "ru": "Сегодня обед готовит муж.",
+  "form": "kuva"
+ },
+ {
+  "w": "prati",
+  "sr": "Ona pere voće.",
+  "ru": "Она моет фрукты.",
+  "form": "pere"
+ },
+ {
+  "w": "čitati",
+  "sr": "Volim da čitam.",
+  "ru": "Я люблю читать.",
+  "form": "čitam"
+ },
+ {
+  "w": "pisati",
+  "sr": "Kako se piše ova reč?",
+  "ru": "Как пишется это слово?",
+  "form": "piše"
+ },
+ {
+  "w": "gledati",
+  "sr": "Šta gledaš sada?",
+  "ru": "Что ты сейчас смотришь?",
+  "form": "gledaš"
+ },
+ {
+  "w": "slušati",
+  "sr": "Deca nikad ne slušaju.",
+  "ru": "Дети никогда не слушаются.",
+  "form": "slušaju"
+ },
+ {
+  "w": "čuti",
+  "sr": "Ne čujem te dobro.",
+  "ru": "Я тебя плохо слышу.",
+  "form": "čujem"
+ },
+ {
+  "w": "odmarati se",
+  "sr": "Odmaramo se u nedelju.",
+  "ru": "В воскресенье мы отдыхаем.",
+  "form": "Odmaramo se"
+ },
+ {
+  "w": "prodavnica",
+  "sr": "Prodavnica radi do deset.",
+  "ru": "Магазин работает до десяти.",
+  "form": "Prodavnica"
+ },
+ {
+  "w": "pijaca",
+  "sr": "U subotu idem na pijacu.",
+  "ru": "В субботу я иду на рынок.",
+  "form": "pijacu"
+ },
+ {
+  "w": "apoteka",
+  "sr": "Izvinite, gde je apoteka?",
+  "ru": "Извините, где аптека?",
+  "form": "apoteka"
+ },
+ {
+  "w": "pekara",
+  "sr": "Kupujem hleb u pekari.",
+  "ru": "Я покупаю хлеб в пекарне.",
+  "form": "pekari"
+ },
+ {
+  "w": "kasa",
+  "sr": "Platite na kasi, molim.",
+  "ru": "Оплатите на кассе, пожалуйста.",
+  "form": "kasi"
+ },
+ {
+  "w": "kesa",
+  "sr": "Treba li vam kesa?",
+  "ru": "Вам нужен пакет?",
+  "form": "kesa"
+ },
+ {
+  "w": "flaša",
+  "sr": "Jednu flašu vode, molim.",
+  "ru": "Одну бутылку воды, пожалуйста.",
+  "form": "flašu"
+ },
+ {
+  "w": "kilogram",
+  "sr": "Kilogram jabuka, molim.",
+  "ru": "Килограмм яблок, пожалуйста.",
+  "form": "Kilogram"
+ },
+ {
+  "w": "litar",
+  "sr": "Kupi litar mleka.",
+  "ru": "Купи литр молока.",
+  "form": "litar"
+ },
+ {
+  "w": "komad",
+  "sr": "Dajte mi dva komada, molim.",
+  "ru": "Дайте мне две штуки, пожалуйста.",
+  "form": "komada"
+ },
+ {
+  "w": "januar",
+  "sr": "Januar je hladan mesec.",
+  "ru": "Январь — холодный месяц.",
+  "form": "Januar"
+ },
+ {
+  "w": "februar",
+  "sr": "Februar ima dvadeset osam dana.",
+  "ru": "В феврале двадцать восемь дней.",
+  "form": "Februar"
+ },
+ {
+  "w": "mart",
+  "sr": "U martu idemo u Beograd.",
+  "ru": "В марте мы едем в Белград.",
+  "form": "martu"
+ },
+ {
+  "w": "april",
+  "sr": "Sastanak je prvog aprila.",
+  "ru": "Встреча первого апреля.",
+  "form": "aprila"
+ },
+ {
+  "w": "maj",
+  "sr": "U maju je lepo vreme.",
+  "ru": "В мае хорошая погода.",
+  "form": "maju"
+ },
+ {
+  "w": "jun",
+  "sr": "Dolazimo u junu.",
+  "ru": "Мы приедем в июне.",
+  "form": "junu"
+ },
+ {
+  "w": "mesec",
+  "sr": "Učim srpski mesec dana.",
+  "ru": "Я учу сербский уже месяц.",
+  "form": "mesec"
+ },
+ {
+  "w": "godina",
+  "sr": "Živim ovde dve godine.",
+  "ru": "Я живу здесь два года.",
+  "form": "godine"
+ },
+ {
+  "w": "sedmica",
+  "sr": "Sastanak je ove sedmice.",
+  "ru": "Совещание на этой неделе.",
+  "form": "sedmice"
+ },
+ {
+  "w": "datum",
+  "sr": "Koji je danas datum?",
+  "ru": "Какое сегодня число?",
+  "form": "datum"
+ },
+ {
+  "w": "jul",
+  "sr": "Jul je topao mesec.",
+  "ru": "Июль — тёплый месяц.",
+  "form": "Jul"
+ },
+ {
+  "w": "avgust",
+  "sr": "U avgustu ne radim.",
+  "ru": "В августе я не работаю.",
+  "form": "avgustu"
+ },
+ {
+  "w": "septembar",
+  "sr": "Deca idu u školu u septembru.",
+  "ru": "Дети идут в школу в сентябре.",
+  "form": "septembru"
+ },
+ {
+  "w": "oktobar",
+  "sr": "Moj prijatelj dolazi u oktobru.",
+  "ru": "Мой друг приезжает в октябре.",
+  "form": "oktobru"
+ },
+ {
+  "w": "novembar",
+  "sr": "U novembru je loše vreme.",
+  "ru": "В ноябре плохая погода.",
+  "form": "novembru"
+ },
+ {
+  "w": "decembar",
+  "sr": "U decembru smo u Rusiji.",
+  "ru": "В декабре мы в России.",
+  "form": "decembru"
+ },
+ {
+  "w": "proleće",
+  "sr": "Proleće u Beogradu je lepo.",
+  "ru": "Весна в Белграде красивая.",
+  "form": "Proleće"
+ },
+ {
+  "w": "leto",
+  "sr": "Mnogo volim leto.",
+  "ru": "Я очень люблю лето.",
+  "form": "leto"
+ },
+ {
+  "w": "jesen",
+  "sr": "Na jesen idemo u Srbiju.",
+  "ru": "Осенью мы едем в Сербию.",
+  "form": "jesen"
+ },
+ {
+  "w": "zima",
+  "sr": "Zima u Rusiji je hladna.",
+  "ru": "Зима в России холодная.",
+  "form": "Zima"
+ }
+]

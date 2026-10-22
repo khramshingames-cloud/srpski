@@ -4,11 +4,11 @@
 // Озвучка: сначала кэш, в отдельном хранилище — обновление кода её не перекачивает.
 // Приложение само докачивает озвучку выбранного голоса в фоне (warmAudio в audio.js).
 // После перегенерации озвучки — поднять версию AUDIO.
-const CACHE = 'srpski-v7';
+const CACHE = 'srpski-v8';
 const AUDIO = 'srpski-audio-v1';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
-  'js/app.js', 'js/data.js', 'js/store.js', 'js/engine.js', 'js/audio.js', 'js/translit.js', 'js/progress.js', 'js/stress.js',
+  'js/app.js', 'js/data.js', 'js/store.js', 'js/engine.js', 'js/audio.js', 'js/translit.js', 'js/progress.js', 'js/stress.js', 'js/sentences.js',
   'icons/icon.svg', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png',
 ];
 

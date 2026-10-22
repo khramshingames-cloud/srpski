@@ -1,0 +1,56 @@
+known L1 [U1] Самые нужные слова: ja = я; ti = ты; da = да; ne = нет; не; zdravo = привет; здравствуй; ćao = привет; пока; hvala = спасибо; molim = пожалуйста; прошу; izvinite = извините; dobro = хорошо
+known L2 [U1] Кофе, вода, хлеб: voda = вода; kafa = кофе; čaj = чай; pivo = пиво; vino = вино; sok = сок; mleko = молоко; hleb = хлеб; šećer = сахар; još = ещё
+known L3 [U1] Он, она, мы и главные глаголы: on = он; ona = она; mi = мы; vi = вы; oni = они; biti = быть; imati = иметь; znati = знать; razumeti = понимать; govoriti = говорить
+known G1 [U1] Я есть, я не понимаю: li = ли (вопрос); srpski = сербский; по-сербски; engleski = английский; по-английски; ruski = русский; по-русски
+known L4 [U1] Знакомство: ime = имя; zvati se = называться; ko = кто; kako = как; gde = где; odakle = откуда; iz = из; živeti = жить; Srbija = Сербия; Rusija = Россия
+known G2 [U1] Как тебя зовут? Откуда ты?: u = в; Beograd = Белград; ovde = здесь; tamo = там
+known L5 [U2] Числа 1–10: jedan = один; dva = два; tri = три; četiri = четыре; pet = пять; šest = шесть; sedam = семь; osam = восемь; devet = девять; deset = десять
+known L6 [U2] Числа до тысячи: nula = ноль; jedanaest = одиннадцать; dvanaest = двенадцать; petnaest = пятнадцать; dvadeset = двадцать; trideset = тридцать; pedeset = пятьдесят; sto = сто; hiljada = тысяча; pola = половина
+known L7 [U2] Время: sat = час; часы; minut = минута; vreme = время; погода; danas = сегодня; sutra = завтра; juče = вчера; sada = сейчас; jutro = утро; veče = вечер; koliko = сколько
+known L8 [U2] Дни недели: ponedeljak = понедельник; utorak = вторник; sreda = среда; četvrtak = четверг; petak = пятница; subota = суббота; nedelja = воскресенье; dan = день; noć = ночь; vikend = выходные
+known L9 [U2] Деньги: novac = деньги; dinar = динар; evro = евро; cena = цена; račun = счёт; kartica = карта (банковская); gotovina = наличные; skupo = дорого; jeftino = дёшево; platiti = заплатить
+known L10 [U3] Глаголы на каждый день: jesti = есть, кушать; piti = пить; hteti = хотеть; voleti = любить; raditi = работать; делать; ići = идти; ехать; doći = прийти; videti = видеть; kupiti = купить; dati = дать
+known G4 [U3] Я пью, ты пьёшь: i = и
+known L11 [U3] Еда: jabuka = яблоко; sir = сыр; meso = мясо; riba = рыба; piletina = курица (мясо); salata = салат; supa = суп; jaje = яйцо; voće = фрукты; povrće = овощи
+known L12 [U3] В кафе и ресторане: restoran = ресторан; kafić = кафе; konobar = официант; jelovnik = меню; čaša = стакан; бокал; tanjir = тарелка; doručak = завтрак; ručak = обед; večera = ужин; ukusno = вкусно
+WRITE L13 [U4] Дом и квартира: kuća = дом; stan = квартира; soba = комната; kuhinja = кухня; kupatilo = ванная; sprat = этаж; vrata = дверь; prozor = окно; ključ = ключ; adresa = адрес
+WRITE L14 [U4] Где? Куда?: na = на; kod = у (кого-то); sa = с; bez = без; za = для; за; od = от; do = до; levo = налево; слева; desno = направо; справа; pravo = прямо
+WRITE G5 [U4] Где? На каком этаже?: prvi = первый; drugi = второй; другой; treći = третий; četvrti = четвёртый
+WRITE L15 [U4] Город и транспорт: grad = город; ulica = улица; trg = площадь; centar = центр; stanica = остановка; станция; autobus = автобус; tramvaj = трамвай; taksi = такси; auto = машина; karta = билет; карта
+WRITE L16 [U4] Люди вокруг: čovek = человек; мужчина; žena = женщина; жена; muž = муж; dete = ребёнок; deca = дети; prijatelj = друг; devojka = девушка; dečko = парень; porodica = семья; komšija = сосед
+WRITE L17 [U4] Какой?: dobar = хороший; loš = плохой; veliki = большой; mali = маленький; novi = новый; stari = старый; lep = красивый; topao = тёплый; hladan = холодный; važan = важный
+WRITE G6 [U4] Хороший, хорошая, хорошее: ovaj = этот; moj = мой; tvoj = твой
+WRITE L18 [U4] Очень, всё, ничего: vrlo = очень; jako = очень; сильно; malo = мало; немного; mnogo = много; sve = всё; nešto = что-то; ništa = ничего; uvek = всегда; nikad = никогда; možda = может быть
+WRITE L19 [U5] Что? Когда? Почему?: šta = что; kada = когда; zašto = почему; зачем; koji = какой; который; kuda = куда; čiji = чей; jer = потому что; ali = но; a = а; ili = или
+WRITE L20 [U5] Могу, должен, нужно: moći = мочь; morati = быть должным; trebati = нужно; надо; želeti = желать; хотеть; misliti = думать; pitati = спрашивать; reći = сказать; čekati = ждать; tražiti = искать; просить; pomoći = помочь
+WRITE L21 [U5] Работа и учёба: posao = работа; šef = начальник; kolega = коллега; sastanak = встреча; совещание; škola = школа; učiti = учить; учиться; jezik = язык; reč = слово; pitanje = вопрос; odgovor = ответ
+WRITE L22 [U6] Мой день: spavati = спать; ustati = встать; kuvati = готовить (еду); prati = мыть; стирать; čitati = читать; pisati = писать; gledati = смотреть; slušati = слушать; čuti = слышать; odmarati se = отдыхать
+WRITE L23 [U6] Покупки: prodavnica = магазин; pijaca = рынок; apoteka = аптека; pekara = пекарня; kasa = касса; kesa = пакет; flaša = бутылка; kilogram = килограмм; litar = литр; komad = штука; кусок
+WRITE L24 [U6] Месяцы (январь–июнь): januar = январь; februar = февраль; mart = март; april = апрель; maj = май; jun = июнь; mesec = месяц; godina = год; sedmica = неделя; datum = дата
+WRITE L25 [U6] Месяцы и времена года: jul = июль; avgust = август; septembar = сентябрь; oktobar = октябрь; novembar = ноябрь; decembar = декабрь; proleće = весна; leto = лето; jesen = осень; zima = зима
+known L26 [U7] Тело и здоровье: glava = голова; ruka = рука; noga = нога; oko = глаз; zub = зуб; stomak = живот; lekar = врач; bolnica = больница; lek = лекарство; boleti = болеть
+known L27 [U7] Погода и природа: sunce = солнце; kiša = дождь; sneg = снег; vetar = ветер; oblak = облако; toplo = тепло; hladno = холодно; more = море; reka = река; planina = гора
+known L28 [U7] Цвета и одежда: boja = цвет; crven = красный; plav = синий; голубой; zelen = зелёный; beo = белый; crn = чёрный; žut = жёлтый; majica = футболка; jakna = куртка; cipele = туфли; ботинки
+known L29 [U8] Как ты себя чувствуешь?: srećan = счастливый; tužan = грустный; umoran = уставший; gladan = голодный; žedan = испытывающий жажду; ljut = злой; острый; bolestan = больной; zauzet = занятой; slobodan = свободный; siguran = уверенный
+known G11 [U8] Мне холодно, мне нравится: sviđati se = нравиться
+known L30 [U8] Думаю, верю, надеюсь: verovati = верить; osećati se = чувствовать себя; zaboraviti = забыть; sećati se = помнить; nadati se = надеяться; smejati se = смеяться; plakati = плакать; brinuti = волноваться; mrzeti = ненавидеть; slagati se = соглашаться
+known L31 [U9] В дорогу: aerodrom = аэропорт; avion = самолёт; voz = поезд; hotel = отель; pasoš = паспорт; kofer = чемодан; rezervacija = бронь; ulaz = вход; izlaz = выход; turista = турист
+known L32 [U9] До, после, рядом: posle = после; pre = до; перед (по времени); preko = через; напротив; između = между; ispred = перед; iza = за; позади; pored = рядом с; kroz = сквозь; через; protiv = против; umesto = вместо
+known L33 [U9] Движение: ući = войти; izaći = выйти; vratiti se = вернуться; putovati = путешествовать; voziti = водить; везти; šetati = гулять; trčati = бегать; stići = прибыть; успеть; krenuti = отправиться; ostati = остаться
+known L34 [U10] Слова-связки: ako = если; dok = пока; zato = поэтому; onda = тогда; потом; samo = только; takođe = тоже; также; već = уже; opet = опять; baš = именно; прям; pa = потом; ну
+known L35 [U10] Мебель и техника: krevet = кровать; stolica = стул; kauč = диван; ormar = шкаф; frižider = холодильник; šporet = плита; mašina = стиральная машина; televizor = телевизор; lampa = лампа; struja = электричество
+known L36 [U10] Телефон и интернет: telefon = телефон; poruka = сообщение; internet = интернет; lozinka = пароль; aplikacija = приложение; slika = фото; картинка; zvati = звонить; звать; poslati = отправить; kompjuter = компьютер; punjač = зарядка
+known L37 [U11] Продукты: krompir = картошка; paradajz = помидор; luk = лук; pirinač = рис; testenina = макароны; so = соль; ulje = масло (растительное); puter = сливочное масло; kolač = пирожное; торт; sladoled = мороженое
+known L38 [U11] На кухне: nož = нож; viljuška = вилка; kašika = ложка; šolja = чашка; lonac = кастрюля; recept = рецепт; svež = свежий; sladak = сладкий; slan = солёный; kiseo = кислый
+known L39 [U11] Работа: подробнее: plata = зарплата; ugovor = договор; firma = фирма; klijent = клиент; projekat = проект; rok = срок; дедлайн; iskustvo = опыт; odmor = отпуск; отдых; penzija = пенсия; intervju = собеседование
+known L40 [U11] Свободное время: film = фильм; muzika = музыка; knjiga = книга; sport = спорт; utakmica = матч; igra = игра; pesma = песня; igrati = играть; plivati = плавать; plesati = танцевать
+known L41 [U11] Места в городе: banka = банк; pošta = почта; policija = полиция; opština = муниципалитет; crkva = церковь; park = парк; muzej = музей; pozorište = театр; bioskop = кинотеатр; biblioteka = библиотека
+known L42 [U11] Документы: dokument = документ; papir = бумага; potpis = подпись; viza = виза; boravak = вид на жительство; zahtev = заявление; запрос; šalter = окошко (в учреждении); red = очередь; порядок; formular = бланк; pečat = печать
+known L43 [U12] Как часто и когда: ponekad = иногда; često = часто; retko = редко; svaki = каждый; jednom = однажды; один раз; odmah = сразу; uskoro = скоро; kasnije = позже; rano = рано; kasno = поздно
+known L44 [U12] Лёгкий, тяжёлый, близко: lak = лёгкий; težak = тяжёлый; трудный; brz = быстрый; spor = медленный; pun = полный; prazan = пустой; čist = чистый; prljav = грязный; blizu = близко; daleko = далеко
+known L45 [U12] Семья: majka = мать; otac = отец; mama = мама; tata = папа; sin = сын; ćerka = дочь; brat = брат; sestra = сестра; baba = бабушка; deda = дедушка
+known L46 [U12] Открыть, взять, начать: otvoriti = открыть; zatvoriti = закрыть; uzeti = взять; staviti = положить; поставить; doneti = принести; nositi = нести; носить; prodati = продать; početi = начать; završiti = закончить; probati = попробовать
+known L47 [U12] Важные слова: život = жизнь; svet = мир; свет; ljubav = любовь; zdravlje = здоровье; sreća = счастье; удача; problem = проблема; ideja = идея; istina = правда; razlog = причина; prilika = возможность; шанс
+known L48 [U12] Быстро, тихо, вместе: zajedno = вместе; brzo = быстро; sporo = медленно; glasno = громко; tiho = тихо; tačno = точно; верно; otprilike = примерно; skoro = почти; недавно; sigurno = наверняка; точно; posebno = особенно
+known L49 [U12] Природа и животные: pas = собака; mačka = кошка; ptica = птица; drvo = дерево; cvet = цветок; nebo = небо; zemlja = земля; страна; jezero = озеро; šuma = лес; selo = деревня; село
+known L50 [U12] Праздники: praznik = праздник; slava = слава (семейный праздник); Božić = Рождество; Uskrs = Пасха; rođendan = день рождения; poklon = подарок; gost = гость; žurka = вечеринка; čestitati = поздравлять; slaviti = праздновать

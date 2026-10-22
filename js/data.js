@@ -1385,6 +1385,8 @@ export const UNITS = [
   },
 ];
 
+import { EXAMPLES } from './sentences.js';
+
 export const COURSE = UNITS.flatMap((u) => u.lessons.map((l) => Object.assign(l, { unit: u.id })));
 
 // ---- Индекс всех единиц, которые попадают в повторение ----
@@ -1394,7 +1396,7 @@ for (const lesson of COURSE) {
   lesson.itemIds = [];
   for (const [sr, ru, emoji, pos, note] of lesson.words || []) {
     const id = 'w:' + sr;
-    ITEMS[id] = { id, kind: 'word', sr, ru, emoji, pos, note, lesson: lesson.id };
+    ITEMS[id] = { id, kind: 'word', sr, ru, emoji, pos, note, lesson: lesson.id, ex: EXAMPLES[sr] };
     lesson.itemIds.push(id);
   }
   for (const [sr, ru, emoji, note] of lesson.phrases || []) {

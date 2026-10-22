@@ -13,7 +13,7 @@
 //   cloze    — вставить пропущенное слово в предложение
 
 import { ITEMS, LESSON } from './data.js';
-import { progress } from './store.js';
+import { progress, currentProfile } from './store.js';
 
 export const shuffle = (a) => {
   a = [...a];
@@ -30,8 +30,14 @@ const matchTask = (ids) => ({ t: 'match', ids: shuffle(ids).slice(0, 5) });
 
 // Урок делится на короткие уровни по 1–2 минуты. После каждого — поздравление.
 // prev — слова из прошлых уроков, которые подмешиваются для закрепления.
+// Режим Насти: слова учатся только внутри предложений (у каждого слова есть пример ITEMS[id].ex)
+const sentenceMode = () => currentProfile() === 'nastya';
+const hasEx = (id) => !!ITEMS[id]?.ex;
+
 export function buildLessonLevels(lessonId, prev = []) {
   const L = LESSON[lessonId];
+  if (sentenceMode() && L.type === 'words' && L.itemIds.every(hasEx)) return sentenceWordLevels(L.itemIds, prev.filter(hasEx));
+  if (sentenceMode() && L.type === 'grammar') return sentenceGrammarLevels(L);
   if (L.type === 'words') return wordLevels(L.itemIds, prev);
   if (L.type === 'phrases') return phraseLevels(L.itemIds);
   if (L.type === 'dialog') return dialogLevels(L);
@@ -81,6 +87,30 @@ function grammarLevels(L) {
   ];
 }
 
+// Слова во фразах: знакомство с фразой → понять фразу → собрать → на слух и вставить → напечатать самому.
+function sentenceWordLevels(ids, prev) {
+  const a = ids.slice(0, 5), b = ids.slice(5);
+  const half = shuffle(ids);
+  const intro = (xs) => xs.map((id) => ({ t: 'sintro', id }));
+  return [
+    { title: 'Новые слова во фразах', emoji: '🌱', tasks: [...intro(a), ...each(a, 's_ru')] },
+    { title: 'Ещё новые фразы', emoji: '🌿', tasks: [...intro(b), ...each(b, 's_ru'), ...prev.map((id) => ({ t: pick(['s_audio', 's_cloze']), id }))] },
+    { title: 'Собери фразу', emoji: '🧩', tasks: each(ids, 's_build') },
+    { title: 'На слух', emoji: '👂', tasks: [...each(ids, 's_audio'), ...each(half.slice(0, 5), 's_cloze')] },
+    { title: 'Финал', emoji: '🏆', tasks: [...each(half.slice(5), 's_cloze'), ...each(half.slice(0, 3), 's_type'),
+      ...shuffle(ids).map((id) => ({ t: pick(['s_ru', 's_build', 's_audio']), id, final: true }))] },
+  ];
+}
+
+function sentenceGrammarLevels(L) {
+  const levels = grammarLevels(L);
+  const words = L.itemIds.filter((id) => ITEMS[id].kind === 'word' && hasEx(id));
+  const isWordCard = (t) => ['intro', 'sr_ru', 'ru_sr'].includes(t.t) && ITEMS[t.id]?.kind === 'word';
+  levels[0].tasks = [...levels[0].tasks.filter((t) => !isWordCard(t)),
+    ...words.map((id) => ({ t: 'sintro', id })), ...each(words, 's_ru'), ...each(words, 's_build')];
+  return levels;
+}
+
 // Диалог: посмотреть сцену → понять реплики собеседника → ответить самому → то же на слух.
 // Ответы идут по порядку разговора, поэтому после ошибки реплику не откладываем (noRetry).
 function dialogLevels(L) {
@@ -97,14 +127,16 @@ function dialogLevels(L) {
 // ~14 карточек + «пары» ≈ 2–4 минуты. Каждый запуск — новый набор.
 const ANY_TYPE = {
   word: ['sr_ru', 'ru_sr', 'audio', 'letters', 'type', 'ru_sr', 'letters'],
+  sword: ['s_ru', 's_audio', 's_build', 's_cloze', 's_type', 's_build'],
   phrase: ['sr_ru', 'ru_sr', 'audio', 'build'],
   sentence: ['build'],
 };
 export function buildQuickTasks(learned, n = 14) {
   const ids = shuffle(learned);
-  const tasks = ids.slice(0, n).map((id) => ({ t: pick(ANY_TYPE[ITEMS[id].kind]), id }));
+  const kind = (id) => (sentenceMode() && ITEMS[id].kind === 'word' && hasEx(id) ? 'sword' : ITEMS[id].kind);
+  const tasks = ids.slice(0, n).map((id) => ({ t: pick(ANY_TYPE[kind(id)]), id }));
   const words = ids.slice(n).filter((id) => ITEMS[id].kind === 'word');
-  if (words.length >= 5) tasks.splice(Math.floor(Math.random() * tasks.length), 0, matchTask(words.slice(0, 5)));
+  if (words.length >= 5 && !sentenceMode()) tasks.splice(Math.floor(Math.random() * tasks.length), 0, matchTask(words.slice(0, 5)));
   return tasks;
 }
 
@@ -113,6 +145,11 @@ export function buildQuickTasks(learned, n = 14) {
 function reviewType(id) {
   const it = ITEMS[id], iv = progress(id)?.iv || 1;
   if (it.kind === 'sentence') return 'build';
+  if (sentenceMode() && it.kind === 'word' && it.ex) {
+    if (iv < 3) return pick(['s_ru', 's_audio', 's_cloze']);
+    if (iv < 7) return pick(['s_build', 's_cloze', 's_audio']);
+    return pick(['s_type', 's_build', 's_cloze']);
+  }
   if (it.kind === 'phrase') return pick(iv < 3 ? ['sr_ru', 'ru_sr', 'audio'] : ['ru_sr', 'audio', 'build']);
   if (iv < 3) return pick(['sr_ru', 'ru_sr', 'audio']);
   if (iv < 7) return pick(['ru_sr', 'audio', 'letters']);
@@ -123,7 +160,7 @@ export function buildReviewTasks(ids) {
   let tasks = shuffle(ids).map((id) => ({ t: reviewType(id), id }));
   // самые слабые слова (до 5) объединяем в одну карточку «пары» — быстро и наглядно
   const weak = tasks.filter((x) => x.t === 'sr_ru' && ITEMS[x.id].kind === 'word');
-  if (weak.length >= 4) {
+  if (weak.length >= 4 && !sentenceMode()) {
     const ids5 = weak.slice(0, 5).map((x) => x.id);
     tasks = tasks.filter((x) => !(x.t === 'sr_ru' && ids5.includes(x.id)));
     tasks.unshift({ t: 'match', ids: ids5 });
@@ -138,9 +175,9 @@ export function retryTasks(task, wrongIds) {
 }
 
 // Варианты ответа: того же типа (существительные к существительным и т.п.), с разным переводом.
-export function distractors(id, pool, n = 3) {
+export function distractors(id, pool, n = 3, needEx = false) {
   const it = ITEMS[id];
-  const ok = (x) => x !== id && ITEMS[x] && ITEMS[x].kind === it.kind && ITEMS[x].ru !== it.ru && ITEMS[x].sr !== it.sr;
+  const ok = (x) => x !== id && ITEMS[x] && ITEMS[x].kind === it.kind && ITEMS[x].ru !== it.ru && ITEMS[x].sr !== it.sr && (!needEx || ITEMS[x].ex);
   const same = shuffle(pool.filter((x) => ok(x) && ITEMS[x].pos === it.pos));
   const other = shuffle(pool.filter((x) => ok(x) && ITEMS[x].pos !== it.pos));
   let out = [...same, ...other].slice(0, n);

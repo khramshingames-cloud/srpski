@@ -10,6 +10,7 @@ const texts = [
   ...COURSE.flatMap((L) => (L.rules || []).flatMap((r) => r.examples.map(([sr]) => sr))),
   ...COURSE.flatMap((L) => (L.exercises || []).filter((e) => e.k === 'cloze').map((e) => e.sr.replace('___', e.a))),
   ...COURSE.flatMap((L) => (L.lines || []).map((l) => l[1])),
+  ...Object.values(ITEMS).filter((it) => it.ex).map((it) => it.ex.sr),
   ...EXTRA,
 ];
 

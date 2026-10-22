@@ -6,7 +6,15 @@
 
 import { COURSE, ITEMS } from './data.js';
 
-const KEY = 'srpski.v1'; // имя ключа не меняем, версия данных — внутри
+// Два режима — два независимых профиля со своим прогрессом и настройками.
+// Вова живёт под старым ключом, поэтому его прогресс никуда не делся.
+export const PROFILES = {
+  vova: { name: 'Вова', key: 'srpski.v1' },
+  nastya: { name: 'Настя', key: 'srpski.nastya' },
+};
+const PROFILE_KEY = 'srpski.profile';
+let profile = (() => { try { return PROFILES[localStorage.getItem(PROFILE_KEY)] ? localStorage.getItem(PROFILE_KEY) : 'vova'; } catch { return 'vova'; } })();
+export const currentProfile = () => profile;
 const MAX_INTERVAL = 60;
 
 const DEFAULTS = {
@@ -32,7 +40,7 @@ function migrate(s) {
 
 function load() {
   try {
-    const raw = JSON.parse(localStorage.getItem(KEY));
+    const raw = JSON.parse(localStorage.getItem(PROFILES[profile].key));
     if (raw && (raw.v === 1 || raw.v === 2)) {
       const s = migrate(raw);
       return { ...fresh(), ...s, settings: { ...DEFAULTS, ...s.settings } };
@@ -44,7 +52,15 @@ function load() {
 let state = load();
 
 export function save() {
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
+  try { localStorage.setItem(PROFILES[profile].key, JSON.stringify(state)); } catch {}
+}
+
+export function switchProfile(p) {
+  if (!PROFILES[p] || p === profile) return;
+  save();
+  profile = p;
+  try { localStorage.setItem(PROFILE_KEY, p); } catch {}
+  state = load();
 }
 
 export const settings = () => state.settings;

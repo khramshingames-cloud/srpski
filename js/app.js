@@ -34,6 +34,26 @@ function renderTabs() {
   })[tab]();
   window.scrollTo(0, 0);
 }
+// ---- режимы Вова / Настя: отдельный прогресс, настройки и цветовая тема ----
+function applyMode() {
+  const mode = store.currentProfile();
+  document.documentElement.dataset.mode = mode;
+  const light = mode === 'nastya' ? '#f6f1f8' : '#f6f1ea', dark = mode === 'nastya' ? '#1b1820' : '#1c1916';
+  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
+    m.content = m.media.includes('dark') ? dark : light;
+  });
+}
+document.querySelector('#modebar').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-mode]');
+  if (!b || b.dataset.mode === store.currentProfile()) return;
+  stop();
+  store.switchProfile(b.dataset.mode);
+  applyMode();
+  buzz(15);
+  renderTabs();
+  setTimeout(() => warmAudio(), 1500);
+});
+
 document.querySelector('nav').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-tab]');
   if (b) { tab = b.dataset.tab; renderTabs(); }
@@ -98,7 +118,8 @@ function renderHome() {
 
   view.innerHTML = `
     <section class="hello">
-      <div><p class="hello-sub">${sun} ${hello}!</p><h2>Учим сербский</h2></div>
+      <div><p class="hello-sub">${sun} ${hello}${store.currentProfile() === 'nastya' ? ', Настя' : ', Вова'}!</p><h2>Учим сербский</h2>
+        <p class="mode-sub">${store.currentProfile() === 'nastya' ? '💬 Режим фраз: каждое слово — в предложении' : '🃏 Режим карточек: слово → перевод'}</p></div>
       <div class="streak" title="Дней подряд">🔥 ${st}</div>
     </section>
     <button class="card level-mini" data-act="progress">
@@ -185,7 +206,7 @@ function renderWords() {
       const it = ITEMS[id], p = store.progress(id), s = store.strength(id);
       const when = p.due <= t ? 'сегодня' : `через ${Math.round((new Date(p.due) - new Date(t)) / 86400000)} дн.`;
       return `<li data-sr="${esc(it.sr)}"><span class="w-e">${it.emoji}</span>
-        <div class="w-t"><b>${SRH(it)}</b><small>${esc(it.ru)}</small></div>
+        <div class="w-t"><b>${SRH(it)}</b><small>${esc(it.ru)}</small>${store.currentProfile() === 'nastya' && it.ex ? `<span class="w-ex">${esc(D(it.ex.sr))}</span>` : ''}</div>
         <div class="w-s"><div class="bar"><i style="width:${Math.round(s * 100)}%"></i></div><small>${when}</small></div></li>`;
     }).join('')}</ul>`).join('');
   view.onclick = (e) => { const li = e.target.closest('li[data-sr]'); if (li) say(li.dataset.sr); };
@@ -395,6 +416,7 @@ function runSession({ title, tasks, pool, onDone }) {
   // заранее подгружаем звук всех карточек сессии — без пауз и пропусков
   preload([...new Set(tasks.flatMap((t) => [
     ...(t.id ? [ITEMS[t.id].sr] : []), ...(t.ids || []).map((id) => ITEMS[id].sr),
+    ...(t.id && t.t.startsWith('s') && ITEMS[t.id].ex ? [ITEMS[t.id].ex.sr] : []),
     ...(t.ex ? [t.ex.sr.replace('___', t.ex.a)] : []),
     ...(t.t === 'rule' ? LESSON[t.lesson].rules[t.i].examples.map(([sr]) => sr) : []),
   ]))]);
@@ -615,6 +637,132 @@ function bindChat(el, L) {
       sayLine(L, line);
     };
   });
+}
+
+// ---- режим Насти: карточки на предложениях ----
+// Фраза с подсвеченным словом: «Volim <mark>jabuke</mark>.»
+// Где во фразе стоит слово: ищем целое слово, чтобы «a» не нашлось внутри «kafa»
+function formAt(ex) {
+  const isLetter = (c) => !!c && /\p{L}/u.test(c);
+  for (let i = ex.sr.indexOf(ex.form); i >= 0; i = ex.sr.indexOf(ex.form, i + 1)) {
+    if (!isLetter(ex.sr[i - 1]) && !isLetter(ex.sr[i + ex.form.length])) return i;
+  }
+  return ex.sr.indexOf(ex.form);
+}
+function markSent(ex) {
+  const i = formAt(ex);
+  if (i < 0) return esc(D(ex.sr));
+  return `${esc(D(ex.sr.slice(0, i)))}<mark>${esc(D(ex.form))}</mark>${esc(D(ex.sr.slice(i + ex.form.length)))}`;
+}
+
+const SENT = {
+  sintro(task, el) {
+    const it = ITEMS[task.id], ex = it.ex;
+    el.innerHTML = `<div class="intro">
+      <span class="tag">Новое слово во фразе</span>
+      <div class="emoji sm">${it.emoji}</div>
+      <div class="sent">${markSent(ex)}</div>
+      ${speakBtn(ex.sr, true)}
+      <div class="ru">${esc(ex.ru)}</div>
+      <div class="gloss"><b>${SRH(it)}</b><span>— ${esc(it.ru)}</span>${speakBtn(it.sr)}</div>
+      ${it.note ? `<div class="note">${esc(D(it.note))}</div>` : ''}
+    </div>`;
+    bindSpeak(el);
+    autoSay(ex.sr);
+    return { mode: 'info' };
+  },
+
+  // Что значит фраза? (видна и слышна)  /  Что ты слышишь? (только звук)
+  s_ru: (t, el, pool, ctx) => sentenceChoice(t, el, pool, ctx, false),
+  s_audio: (t, el, pool, ctx) => sentenceChoice(t, el, pool, ctx, true),
+
+  s_build(task, el, pool, ctx) {
+    const it = ITEMS[task.id], ex = it.ex;
+    const words = ex.sr.replace(/[.,!?]/g, '').split(/\s+/);
+    const other = ITEMS[distractors(task.id, pool, 1, true)[0]]?.ex;
+    const extra = other ? shuffle(other.sr.replace(/[.,!?]/g, '').split(/\s+/).filter((w) => !words.includes(w))).slice(0, 2) : [];
+    el.innerHTML = `<div class="q"><span class="tag">Собери фразу</span>
+      <div class="emoji sm">${it.emoji}</div><div class="prompt sm-plus">${esc(ex.ru)}</div></div>`;
+    let cur = [];
+    const T = tiles(el, shuffle([...words, ...extra]), (p) => { cur = p; ctx.ready(p.length > 0); });
+    return {
+      check() {
+        const ok = norm(cur.join(' ')) === norm(ex.sr);
+        T.lock(ok);
+        return { ok, answer: `${D(ex.sr)} — ${ex.ru}`, sayAfter: ex.sr };
+      },
+    };
+  },
+
+  s_cloze(task, el, pool, ctx) {
+    const it = ITEMS[task.id], ex = it.ex;
+    const i = formAt(ex);
+    const forms = [...new Set(distractors(task.id, pool, 6, true).map((x) => ITEMS[x].ex.form).filter((f) => norm(f) !== norm(ex.form)))].slice(0, 3);
+    el.innerHTML = `<div class="q"><span class="tag">Вставь слово</span>
+      <div class="prompt sm">${esc(ex.ru)}</div>
+      <div class="cloze">${esc(D(ex.sr.slice(0, i)))}<span class="blank">&nbsp;?&nbsp;</span>${esc(D(ex.sr.slice(i + ex.form.length)))}</div></div>`;
+    let chosen = null;
+    const O = optionList(el, shuffle([ex.form, ...forms]), D, (o) => { chosen = o; $('.blank', el).textContent = D(o); ctx.ready(true); });
+    return {
+      check() {
+        const ok = chosen === ex.form;
+        O.reveal(ex.form, chosen);
+        $('.blank', el).classList.add(ok ? 'right' : 'wrong');
+        return { ok, answer: `${D(ex.sr)} — ${ex.ru}`, sayAfter: ex.sr };
+      },
+    };
+  },
+
+  s_type(task, el, pool, ctx) {
+    const it = ITEMS[task.id], ex = it.ex;
+    const cyr = store.settings().script === 'cyr';
+    const keys = cyr ? ['ч', 'ћ', 'ш', 'ж', 'ђ', 'љ', 'њ', 'џ', 'ј'] : ['č', 'ć', 'š', 'ž', 'đ'];
+    el.innerHTML = `<div class="q"><span class="tag">Напиши фразу по-сербски</span>
+      <div class="emoji sm">${it.emoji}</div><div class="prompt sm-plus">${esc(ex.ru)}</div>
+      <button class="link hint-b">Подсказка</button><div class="hint-t" hidden>${esc(D(ex.form))} — ${esc(it.ru)}</div></div>
+      <textarea class="type-in" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="${cyr ? 'пиши ћирилицом или latinicom' : 'piši ovde'}"></textarea>
+      <div class="keys">${keys.map((k) => `<button class="key">${k}</button>`).join('')}</div>`;
+    const inp = $('.type-in', el);
+    $('.hint-b', el).onclick = (e) => { e.target.hidden = true; $('.hint-t', el).hidden = false; };
+    inp.oninput = () => ctx.ready(inp.value.trim().length > 0);
+    $('.keys', el).onclick = (e) => {
+      const b = e.target.closest('.key');
+      if (!b) return;
+      inp.value += b.textContent; inp.focus(); ctx.ready(true);
+    };
+    return {
+      check() {
+        inp.disabled = true;
+        const a = norm(inp.value), want = norm(ex.sr);
+        const ok = a === want, near = !ok && stripDiacritics(a) === stripDiacritics(want);
+        inp.classList.add(ok || near ? 'right' : 'wrong');
+        return { ok: ok || near, near, answer: `${D(ex.sr)} — ${ex.ru}`, sayAfter: ex.sr };
+      },
+    };
+  },
+};
+
+function sentenceChoice(task, el, pool, ctx, audioOnly) {
+  const it = ITEMS[task.id], ex = it.ex;
+  const opts = shuffle([task.id, ...distractors(task.id, pool, 3, true)]);
+  el.innerHTML = audioOnly
+    ? `<div class="q"><span class="tag">Что ты слышишь?</span>${speakBtn(ex.sr, true)}
+        <button class="link peek">Не слышно? Показать фразу</button><div class="sent sm" hidden>${markSent(ex)}</div></div>`
+    : `<div class="q"><span class="tag">Что значит фраза?</span><div class="emoji sm">${it.emoji}</div>
+        <div class="sent sm">${markSent(ex)}</div>${speakBtn(ex.sr)}</div>`;
+  bindSpeak(el);
+  const peek = $('.peek', el);
+  if (peek) peek.onclick = () => { peek.hidden = true; peek.nextElementSibling.hidden = false; };
+  let chosen = null;
+  const O = optionList(el, opts, (id) => ITEMS[id].ex.ru, (id) => { chosen = id; ctx.ready(true); });
+  autoSay(ex.sr);
+  return {
+    check() {
+      const ok = chosen === task.id;
+      O.reveal(task.id, chosen);
+      return { ok, answer: `${D(ex.sr)} — ${ex.ru}`, sayAfter: audioOnly || !ok ? ex.sr : null };
+    },
+  };
 }
 
 const RENDER = {
@@ -875,7 +1023,10 @@ function cyrTextNodes(root) {
   for (let n; (n = w.nextNode());) n.nodeValue = toCyr(n.nodeValue);
 }
 
+Object.assign(RENDER, SENT);
+
 // ================= Старт =================
+applyMode();
 renderTabs();
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.register('sw.js').catch(() => {});

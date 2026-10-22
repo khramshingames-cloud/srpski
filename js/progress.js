@@ -39,11 +39,11 @@ export function cefr(score = knowledge().score) {
 }
 
 const SKILLS = [
-  { key: 'Узнавание', icon: '👀', types: ['sr_ru', 'match'] },
+  { key: 'Узнавание', icon: '👀', types: ['sr_ru', 'match', 's_ru'] },
   { key: 'Вспоминание', icon: '💭', types: ['ru_sr'] },
-  { key: 'На слух', icon: '👂', types: ['audio'] },
-  { key: 'Написание', icon: '✍️', types: ['letters', 'type'] },
-  { key: 'Предложения', icon: '🧩', types: ['build', 'cloze'] },
+  { key: 'На слух', icon: '👂', types: ['audio', 's_audio'] },
+  { key: 'Написание', icon: '✍️', types: ['letters', 'type', 's_type'] },
+  { key: 'Предложения', icon: '🧩', types: ['build', 'cloze', 's_build', 's_cloze'] },
   { key: 'Диалоги', icon: '💬', types: ['chat', 'listen'] },
 ];
 const POS = { n: 'Существительные', v: 'Глаголы', adj: 'Прилагательные', adv: 'Наречия', pron: 'Местоимения', num: 'Числа', other: 'Служебные', phrase: 'Фразы', sentence: 'Предложения' };

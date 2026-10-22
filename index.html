@@ -14,8 +14,13 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Srpski">
   <link rel="stylesheet" href="css/style.css">
+  <script>try { document.documentElement.dataset.mode = localStorage.getItem('srpski.profile') === 'nastya' ? 'nastya' : 'vova'; } catch {}</script>
 </head>
 <body>
+  <div id="modebar" role="tablist" aria-label="Режим">
+    <button data-mode="vova">🙋‍♂️ Вова</button>
+    <button data-mode="nastya">🙋‍♀️ Настя</button>
+  </div>
   <main id="view"></main>
   <nav>
     <button data-tab="home"><svg viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-5h-6v5H5.5A1.5 1.5 0 0 1 4 19z"/></svg>Сегодня</button>
