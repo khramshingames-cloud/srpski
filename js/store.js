@@ -15,6 +15,7 @@ const DEFAULTS = {
   autoplay: true,
   rate: 1,           // множитель скорости озвучки
   voice: 'f',        // f — Софи, m — Никола
+  stress: true,      // подсвечивать ударную гласную
 };
 
 const fresh = (settings = DEFAULTS) => ({ v: 2, items: {}, done: [], days: {}, partial: {}, stats: {}, settings: { ...settings } });

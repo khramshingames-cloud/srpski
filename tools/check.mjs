@@ -36,3 +36,11 @@ const phrases = Object.values(ITEMS).filter((i) => i.kind === 'phrase').length;
 const sentences = Object.values(ITEMS).filter((i) => i.kind === 'sentence').length;
 console.log(`\nunits ${UNITS.length}, lessons ${COURSE.length} (words ${COURSE.filter((l) => l.type === 'words').length}, grammar ${COURSE.filter((l) => l.type === 'grammar').length}, phrases ${COURSE.filter((l) => l.type === 'phrases').length})`);
 console.log(`words ${words}, phrases ${phrases}, sentences ${sentences}, problems ${problems}`);
+
+// ---- ударения: у каждого слова из 2+ слогов должна быть разметка ----
+const { STRESS } = await import('../js/stress.js');
+const syllables = (w) => (w.toLowerCase().match(/[aeiou]/g) || []).length + (/(^|[^aeiou])r([^aeiou]|$)/i.test(w) ? 1 : 0);
+const wordTokens = new Set(Object.values(ITEMS).filter((i) => i.kind === 'word').flatMap((i) => i.sr.split(' ')).filter((w) => w !== 'se'));
+const missing = [...wordTokens].filter((w) => syllables(w) >= 2 && !STRESS[w]);
+const extra = Object.keys(STRESS).filter((w) => !wordTokens.has(w));
+console.log(`stress: ${Object.keys(STRESS).length} marked, missing ${missing.length}${missing.length ? ': ' + missing.join(', ') : ''}${extra.length ? ' | not in course: ' + extra.join(', ') : ''}`);

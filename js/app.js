@@ -4,11 +4,17 @@ import { buildLessonLevels, buildReviewTasks, buildQuickTasks, retryTasks, distr
 import { speak, stop, preload, warmAudio, VOICES } from './audio.js';
 import { toCyr, letters, norm, stripDiacritics } from './translit.js';
 import { renderProgress, knowledge, cefr } from './progress.js';
+import { stressParts } from './stress.js';
 
 const $ = (sel, el = document) => el.querySelector(sel);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // Сербский текст в выбранной азбуке
 const D = (s) => (store.settings().script === 'cyr' ? toCyr(s) : s);
+// Слово с подсвеченной ударной гласной (jábuka). Только для отдельных слов, не для фраз.
+const SRH = (it) => {
+  if (it.kind !== 'word' || !store.settings().stress) return esc(D(it.sr));
+  return stressParts(it.sr).map(([a, v, b]) => (v ? `${esc(D(a))}<span class="acc">${esc(D(v))}́</span>${esc(D(b))}` : esc(D(a)))).join(' ');
+};
 const say = (sr) => speak(sr);
 const autoSay = (sr) => { if (store.settings().autoplay) setTimeout(() => say(sr), 150); };
 // Лёгкая вибрация на Android (iPhone веб-приложениям вибрацию не даёт)
@@ -23,7 +29,7 @@ let tab = 'home';
 function renderTabs() {
   document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   ({
-    home: renderHome, course: renderCourse, progress: () => renderProgress(view, { esc, D, say }),
+    home: renderHome, course: renderCourse, progress: () => renderProgress(view, { esc, D, say, SRH }),
     words: renderWords, settings: renderSettings,
   })[tab]();
   window.scrollTo(0, 0);
@@ -179,7 +185,7 @@ function renderWords() {
       const it = ITEMS[id], p = store.progress(id), s = store.strength(id);
       const when = p.due <= t ? 'сегодня' : `через ${Math.round((new Date(p.due) - new Date(t)) / 86400000)} дн.`;
       return `<li data-sr="${esc(it.sr)}"><span class="w-e">${it.emoji}</span>
-        <div class="w-t"><b>${esc(D(it.sr))}</b><small>${esc(it.ru)}</small></div>
+        <div class="w-t"><b>${SRH(it)}</b><small>${esc(it.ru)}</small></div>
         <div class="w-s"><div class="bar"><i style="width:${Math.round(s * 100)}%"></i></div><small>${when}</small></div></li>`;
     }).join('')}</ul>`).join('');
   view.onclick = (e) => { const li = e.target.closest('li[data-sr]'); if (li) say(li.dataset.sr); };
@@ -198,7 +204,7 @@ function renderAudioCheck() {
   const rows = COURSE.map((L) => `<h4 class="w-group">${esc(L.title)}</h4><ul class="words">${L.itemIds.map((id) => {
     const it = ITEMS[id];
     return `<li data-sr="${esc(it.sr)}"><span class="w-e">${it.emoji}</span>
-      <div class="w-t"><b>${esc(D(it.sr))}</b><small>${esc(it.ru)}</small></div>
+      <div class="w-t"><b>${SRH(it)}</b><small>${esc(it.ru)}</small></div>
       <button class="flag ${bad.has(mark(it.sr)) ? 'on' : ''}" data-flag="${esc(it.sr)}" aria-label="Плохо озвучено">👎</button></li>`;
   }).join('')}</ul>`).join('');
   view.innerHTML = `<button class="link" data-act="back">← Настройки</button>
@@ -243,6 +249,7 @@ function renderSettings() {
       <input type="range" min="10" max="40" step="5" value="${s.reviewSize}" data-k="reviewSize">
       <small>20 ≈ 3–4 минуты. Каждое слово при этом всплывает примерно раз в 3–5 дней, трудные — чаще.</small>
     </div>
+    <div class="set row"><label>Показывать ударения (jábuka)</label><input type="checkbox" data-k="stress" ${s.stress ? 'checked' : ''}></div>
     <div class="set row"><label>Автоозвучка карточек</label><input type="checkbox" data-k="autoplay" ${s.autoplay ? 'checked' : ''}></div>
     <div class="set">
       <label>Голос</label>
@@ -298,7 +305,7 @@ function renderSettings() {
   view.oninput = (e) => {
     const k = e.target.dataset.k;
     if (!k) return;
-    if (k === 'autoplay') store.setSetting(k, e.target.checked);
+    if (k === 'autoplay' || k === 'stress') store.setSetting(k, e.target.checked);
     else store.setSetting(k, Number(e.target.value));
     if (k === 'reviewSize') $('#rs').textContent = e.target.value;
     if (k === 'rate') $('#rt').textContent = e.target.value;
@@ -475,7 +482,7 @@ function runSession({ title, tasks, pool, onDone }) {
       <p class="compliment">${compliment(stars)}</p>
       ${res.dots || ''}
       <p class="muted-t">Карточек: <b>${S.answered}</b> · ошибок: <b>${S.mistakes}</b></p>
-      ${hard.length ? `<p class="muted-t">Чаще будут попадаться:</p><ul class="hard">${hard.map((id) => `<li>${ITEMS[id].emoji} <b>${esc(D(ITEMS[id].sr))}</b> — ${esc(ITEMS[id].ru)}</li>`).join('')}</ul>` : ''}
+      ${hard.length ? `<p class="muted-t">Чаще будут попадаться:</p><ul class="hard">${hard.map((id) => `<li>${ITEMS[id].emoji} <b>${SRH(ITEMS[id])}</b> — ${esc(ITEMS[id].ru)}</li>`).join('')}</ul>` : ''}
       ${res.next ? '<button class="link" data-act="home">На сегодня хватит — на главную</button>' : ''}
     </div>`;
     $('.prog i', ov).style.width = '100%';
@@ -683,7 +690,7 @@ const RENDER = {
     el.innerHTML = `<div class="intro">
       <span class="tag">Новое ${it.kind === 'phrase' ? 'выражение' : 'слово'}</span>
       <div class="emoji">${it.emoji}</div>
-      <div class="sr ${it.kind === 'phrase' ? 'phrase' : ''}">${esc(D(it.sr))}</div>
+      <div class="sr ${it.kind === 'phrase' ? 'phrase' : ''}">${SRH(it)}</div>
       <div class="ru">${esc(it.ru)}</div>
       ${it.note ? `<div class="note">${esc(D(it.note))}</div>` : ''}
       ${speakBtn(it.sr, true)}
@@ -837,11 +844,11 @@ function choice(task, el, pool, ctx, mode) {
   const opts = shuffle([task.id, ...distractors(task.id, pool)]);
   const head = {
     sr_ru: `<span class="tag">Как переводится?</span><div class="emoji sm">${it.emoji}</div>
-            <div class="sr">${esc(D(it.sr))}</div>${speakBtn(it.sr)}`,
+            <div class="sr">${SRH(it)}</div>${speakBtn(it.sr)}`,
     ru_sr: `<span class="tag">Как сказать по-сербски?</span><div class="emoji sm">${it.emoji}</div>
             <div class="prompt">${esc(it.ru)}</div>`,
     audio: `<span class="tag">Что ты слышишь?</span>${speakBtn(it.sr, true)}
-            <button class="link peek">Не слышно? Показать слово</button><div class="sr" hidden>${esc(D(it.sr))}</div>`,
+            <button class="link peek">Не слышно? Показать слово</button><div class="sr" hidden>${SRH(it)}</div>`,
   }[mode];
   el.innerHTML = `<div class="q">${head}</div>`;
   bindSpeak(el);

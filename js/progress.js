@@ -50,7 +50,7 @@ const POS = { n: 'Существительные', v: 'Глаголы', adj: 'П
 
 const pctOf = ([ok, bad]) => (ok + bad ? ok / (ok + bad) : null);
 
-export function renderProgress(view, { esc, D, say }) {
+export function renderProgress(view, { esc, D, say, SRH }) {
   const k = knowledge(), c = cefr(k.score);
   const st = store.stats();
   const lessonsDone = COURSE.filter((L) => store.isDone(L.id)).length;
@@ -132,7 +132,7 @@ export function renderProgress(view, { esc, D, say }) {
 
     ${hard.length ? `<section class="card"><h3>Где чаще ошибаюсь</h3>
       <ul class="hard-list">${hard.map(({ id, p }) => `<li data-sr="${esc(ITEMS[id].sr)}"><span>${ITEMS[id].emoji}</span>
-        <div><b>${esc(D(ITEMS[id].sr))}</b><small>${esc(ITEMS[id].ru)}</small></div><em>✕${p.lapses}</em></li>`).join('')}</ul>
+        <div><b>${SRH(ITEMS[id])}</b><small>${esc(ITEMS[id].ru)}</small></div><em>✕${p.lapses}</em></li>`).join('')}</ul>
       <p class="fine">Эти слова чаще попадают в повторение, пока не закрепятся.</p>
     </section>` : ''}`;
 
