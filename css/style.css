@@ -237,3 +237,21 @@ body.in-session nav { display: none; }
 .flag.on { opacity: 1; filter: none; }
 .sticky-bar { position: sticky; top: 0; z-index: 2; background: var(--bg); padding: 8px 0; }
 .sticky-bar .btn { margin: 0; width: 100%; }
+
+/* ---- уровни и празднование ---- */
+.dots { display: flex; gap: 6px; margin: 10px 0 2px; }
+.dots span { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 15px; background: var(--line); filter: grayscale(1); opacity: .45; }
+.dots span.on { background: var(--good-soft); filter: none; opacity: 1; }
+.dots span.cur { background: var(--primary-soft); filter: none; opacity: 1; outline: 2px solid var(--primary); }
+.finish .dots { justify-content: center; margin: 14px 0; }
+.finish { position: relative; overflow: hidden; }
+.finish-e { animation: pop .5s cubic-bezier(.2, 1.6, .4, 1); }
+.finish.big .finish-e { font-size: 110px; }
+@keyframes pop { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.stars { font-size: 40px; color: #f5b301; letter-spacing: 4px; margin: 6px 0; animation: pop .6s .15s both cubic-bezier(.2, 1.6, .4, 1); }
+.stars i { font-style: normal; color: var(--line); }
+.compliment { font-size: 18px; font-weight: 600; margin: 4px auto 6px; max-width: 340px; }
+.confetti { position: absolute; inset: 0; pointer-events: none; }
+.confetti i { position: absolute; top: -40px; font-style: normal; font-size: 22px; animation: fall 1.8s ease-in forwards; }
+@keyframes fall { to { transform: translateY(520px) rotate(300deg); opacity: 0; } }
+.peek { font-size: 14px; }

@@ -1,7 +1,7 @@
 import { COURSE, ITEMS, LESSON } from './data.js';
 import * as store from './store.js';
-import { buildLessonTasks, buildReviewTasks, retryTasks, distractors, shuffle } from './engine.js';
-import { speak, stop, VOICES } from './audio.js';
+import { buildLessonLevels, buildReviewTasks, retryTasks, distractors, shuffle } from './engine.js';
+import { speak, stop, preload, VOICES } from './audio.js';
 import { toCyr, letters, norm, stripDiacritics } from './translit.js';
 
 const $ = (sel, el = document) => el.querySelector(sel);
@@ -42,7 +42,9 @@ function renderHome() {
   const next = store.nextLesson();
   const c = countKinds();
   const due = store.dueCount();
-  const lessonLocked = reviewIds.length > 0 && !reviewDone;
+  const lvl = next ? store.levelProgress(next.id)?.level || 0 : 0;
+  // начатый урок можно продолжить в любой момент
+  const lessonLocked = reviewIds.length > 0 && !reviewDone && !lvl;
   const st = store.streak();
 
   const reviewCard = learned === 0
@@ -69,9 +71,12 @@ function renderHome() {
         <span class="badge ${next.type}">${TYPE_LABEL[next.type]}</span>
         <h3>${esc(next.title)}</h3>
         <p class="preview">${preview}</p>
+        ${levelDots(next.id)}
         ${lessonLocked
           ? `<p class="hint">Сначала повторение 👆</p>`
-          : `<button class="btn" data-act="lesson" data-id="${next.id}">${store.lessonsToday() ? 'Ещё урок' : 'Начать урок'}</button>`}
+          : `<button class="btn" data-act="lesson" data-id="${next.id}">${lvl
+            ? `Продолжить: уровень ${lvl + 1}`
+            : store.lessonsToday() ? 'Ещё урок' : 'Начать урок'}</button>`}
       </div></div>`;
 
   view.innerHTML = `
@@ -96,6 +101,15 @@ function renderHome() {
   };
 }
 
+const levelsOf = (lessonId) => buildLessonLevels(lessonId);
+
+// Кружки уровней урока: ● пройден, ○ впереди
+function levelDots(lessonId) {
+  const levels = levelsOf(lessonId);
+  const done = store.isDone(lessonId) && !store.levelProgress(lessonId) ? levels.length : store.levelProgress(lessonId)?.level || 0;
+  return `<div class="dots">${levels.map((l, i) => `<span class="${i < done ? 'on' : i === done ? 'cur' : ''}" title="${esc(l.title)}">${l.emoji}</span>`).join('')}</div>`;
+}
+
 function renderCourse() {
   const next = store.nextLesson();
   view.innerHTML = `<h2 class="page-h">Курс: первые 100 слов</h2>
@@ -107,7 +121,8 @@ function renderCourse() {
       return `<li class="${done ? 'done' : isNext ? 'next' : 'locked'}" data-id="${L.id}">
         <span class="c-ico">${icon}</span>
         <div><span class="badge ${L.type}">${TYPE_LABEL[L.type]}</span> <b>${esc(L.title)}</b>
-        <small>${L.type === 'phrases' ? n + ' фраз' : n + ' слов'}${L.exercises ? ' · ' + L.exercises.length + ' упражнений' : ''}</small></div>
+        <small>${L.type === 'phrases' ? n + ' фраз' : n + ' слов'}${L.exercises ? ' · ' + L.exercises.length + ' упражнений' : ''}</small>
+        ${done || isNext ? levelDots(L.id) : ''}</div>
       </li>`;
     }).join('')}</ul>`;
   view.onclick = (e) => {
@@ -271,25 +286,58 @@ function startReview(extra = false) {
     onDone(errors, seen) {
       seen.forEach((id) => store.record(id, errors[id] || 0));
       store.finishReview();
+      return { emoji: '🔁', title: 'Повторение готово!' };
     },
   });
 }
 
+// Слова из прошлых уроков для закрепления: из самых слабых, но каждый раз разные
+function prevWords(L, n = 4) {
+  const ids = store.learnedIds().filter((id) => ITEMS[id].kind === 'word' && ITEMS[id].lesson !== L.id);
+  return shuffle(ids.sort((a, b) => store.strength(a) - store.strength(b)).slice(0, n * 2)).slice(0, n);
+}
+
 function startLesson(lessonId) {
   const L = LESSON[lessonId];
+  const levels = buildLessonLevels(lessonId, prevWords(L));
+  let n = store.levelProgress(lessonId)?.level || 0;
+  if (n >= levels.length) n = 0;
+  const level = levels[n];
   runSession({
-    title: L.title,
-    tasks: buildLessonTasks(lessonId),
+    title: `${L.title} · ${level.title}`,
+    tasks: level.tasks,
     pool: [...new Set([...store.learnedIds(), ...L.itemIds])],
-    onDone(errors) {
-      L.itemIds.forEach((id) => store.record(id, errors[id] || 0));
+    onDone(errors, seen) {
+      const all = store.finishLevel(lessonId, levels.length, errors, [...seen]);
+      const dots = levelDots(lessonId);
+      if (!all) {
+        const nx = levels[n + 1];
+        return {
+          emoji: level.emoji, title: `Уровень ${n + 1} из ${levels.length} пройден!`, dots,
+          next: { label: `Дальше: ${nx.emoji} ${nx.title}`, run: () => startLesson(lessonId) },
+        };
+      }
+      // урок целиком: всё изученное уходит в ежедневное повторение
+      new Set([...L.itemIds, ...all.seen]).forEach((id) => ITEMS[id] && store.record(id, all.errors[id] || 0));
       store.finishLesson(lessonId);
+      const nl = store.nextLesson();
+      return {
+        emoji: '🏆', title: `Урок «${L.title}» пройден!`, dots, big: true,
+        next: nl && (!store.pickReview().length || store.reviewDoneToday())
+          ? { label: `Следующий урок: ${nl.title}`, run: () => startLesson(nl.id) } : null,
+      };
     },
   });
 }
 
 function runSession({ title, tasks, pool, onDone }) {
   const S = { tasks: [...tasks], i: 0, errors: {}, seen: new Set(), mistakes: 0, answered: 0 };
+  // заранее подгружаем звук всех карточек сессии — без пауз и пропусков
+  preload([...new Set(tasks.flatMap((t) => [
+    ...(t.id ? [ITEMS[t.id].sr] : []), ...(t.ids || []).map((id) => ITEMS[id].sr),
+    ...(t.ex ? [t.ex.sr.replace('___', t.ex.a)] : []),
+    ...(t.t === 'rule' ? LESSON[t.lesson].rules[t.i].examples.map(([sr]) => sr) : []),
+  ]))]);
   const ov = document.createElement('div');
   ov.className = 'session';
   ov.innerHTML = `
@@ -300,7 +348,7 @@ function runSession({ title, tasks, pool, onDone }) {
   document.body.classList.add('in-session');
   const card = $('#card', ov), foot = $('#foot', ov), go = $('#go', ov), fb = $('.fb', ov);
 
-  $('.x', ov).onclick = () => { if (confirm('Выйти? Прогресс этой сессии не сохранится.')) close(); };
+  $('.x', ov).onclick = () => { if (S.i >= S.tasks.length || confirm('Выйти? Прогресс этого уровня не сохранится, пройденные уровни останутся.')) close(); };
   function close() { stop(); ov.remove(); document.body.classList.remove('in-session'); renderTabs(); }
 
   const markError = (id) => { S.errors[id] = (S.errors[id] || 0) + 1; };
@@ -356,29 +404,70 @@ function runSession({ title, tasks, pool, onDone }) {
   function advance() { S.i++; show(); }
 
   function finish() {
-    onDone(S.errors, S.seen);
+    const res = onDone(S.errors, S.seen) || {};
+    const stars = S.mistakes === 0 ? 3 : S.mistakes <= 2 ? 2 : 1;
     const hard = Object.keys(S.errors).filter((id) => ITEMS[id]);
-    card.innerHTML = `<div class="finish">
-      <div class="finish-e">🎉</div>
-      <h2>${title} — готово!</h2>
-      <p>Карточек: <b>${S.answered}</b> · ошибок: <b>${S.mistakes}</b></p>
-      ${hard.length ? `<p class="muted-t">Чаще будут попадаться:</p><ul class="hard">${hard.map((id) => `<li>${ITEMS[id].emoji} <b>${esc(D(ITEMS[id].sr))}</b> — ${esc(ITEMS[id].ru)}</li>`).join('')}</ul>` : '<p>Без единой ошибки 💪</p>'}
+    card.innerHTML = `<div class="finish ${res.big ? 'big' : ''}">
+      <div class="confetti">${confetti()}</div>
+      <div class="finish-e">${res.emoji || '🎉'}</div>
+      <h2>${esc(res.title || title + ' — готово!')}</h2>
+      <div class="stars">${'★'.repeat(stars)}<i>${'★'.repeat(3 - stars)}</i></div>
+      <p class="compliment">${compliment(stars)}</p>
+      ${res.dots || ''}
+      <p class="muted-t">Карточек: <b>${S.answered}</b> · ошибок: <b>${S.mistakes}</b></p>
+      ${hard.length ? `<p class="muted-t">Чаще будут попадаться:</p><ul class="hard">${hard.map((id) => `<li>${ITEMS[id].emoji} <b>${esc(D(ITEMS[id].sr))}</b> — ${esc(ITEMS[id].ru)}</li>`).join('')}</ul>` : ''}
+      ${res.next ? '<button class="link" data-act="home">На сегодня хватит — на главную</button>' : ''}
     </div>`;
     $('.prog i', ov).style.width = '100%';
     foot.className = 'good'; fb.innerHTML = '';
-    go.textContent = 'Готово'; go.disabled = false; go.onclick = close;
+    go.disabled = false;
+    if (res.next) {
+      go.textContent = res.next.label;
+      go.onclick = () => { close(); res.next.run(); };
+      $('[data-act=home]', card).onclick = close;
+    } else {
+      go.textContent = 'Готово'; go.onclick = close;
+    }
   }
 
   show();
 }
 
+const rnd = (a) => a[Math.floor(Math.random() * a.length)];
 const PRAISE = ['Верно!', 'Tačno! ✓', 'Bravo!', 'Супер!', 'Odlično!'];
-const pickPraise = () => PRAISE[Math.floor(Math.random() * PRAISE.length)];
+const pickPraise = () => rnd(PRAISE);
+
+const COMPLIMENTS = {
+  3: [
+    'Bravo! Ни одной ошибки — чисто как по нотам 🎯',
+    'Odlično! Сербы бы тобой гордились 🇷🇸',
+    'Svaka čast! Мозг работает как часы 🧠',
+    'Sjajno! Схватываешь на лету 🚀',
+    'Без единой ошибки. Ты точно в первый раз? 😏',
+  ],
+  2: [
+    'Bravo! Почти идеально 💪',
+    'Odlično! Пара промахов — и всё уже запомнилось',
+    'Супер темп! Ещё чуть-чуть — и будет без ошибок',
+    'Dobro! Слова уже цепляются за память 🧲',
+  ],
+  1: [
+    'Ошибки — это и есть обучение. Эти слова вернутся, и ты их добьёшь 💪',
+    'Polako! Главное — регулярность, а она у тебя есть 🐢',
+    'Трудные слова отмечены — в следующий раз будет легче',
+  ],
+};
+const compliment = (stars) => rnd(COMPLIMENTS[stars]);
+const confetti = () => Array.from({ length: 14 }, (_, i) =>
+  `<i style="left:${Math.round(Math.random() * 100)}%;animation-delay:${(Math.random() * 0.6).toFixed(2)}s">${rnd(['🎉', '⭐', '✨', '🇷🇸', '🎊'])}</i>`).join('');
 
 // ================= Карточки =================
 
 const speakBtn = (sr, big) => `<button class="spk${big ? ' big' : ''}" data-say="${esc(sr)}" aria-label="Озвучить">🔊</button>`;
+// #card один на всю сессию — обработчик вешаем один раз, иначе одно нажатие запускает звук N раз
 function bindSpeak(el) {
+  if (el.dataset.speakBound) return;
+  el.dataset.speakBound = '1';
   el.addEventListener('click', (e) => { const b = e.target.closest('[data-say]'); if (b) say(b.dataset.say); });
 }
 
@@ -597,10 +686,13 @@ function choice(task, el, pool, ctx, mode) {
             <div class="sr">${esc(D(it.sr))}</div>${speakBtn(it.sr)}`,
     ru_sr: `<span class="tag">Как сказать по-сербски?</span><div class="emoji sm">${it.emoji}</div>
             <div class="prompt">${esc(it.ru)}</div>`,
-    audio: `<span class="tag">Что ты слышишь?</span>${speakBtn(it.sr, true)}`,
+    audio: `<span class="tag">Что ты слышишь?</span>${speakBtn(it.sr, true)}
+            <button class="link peek">Не слышно? Показать слово</button><div class="sr" hidden>${esc(D(it.sr))}</div>`,
   }[mode];
   el.innerHTML = `<div class="q">${head}</div>`;
   bindSpeak(el);
+  const peek = $('.peek', el);
+  if (peek) peek.onclick = () => { peek.hidden = true; peek.nextElementSibling.hidden = false; };
   let chosen = null;
   const O = optionList(el, opts, (id) => (mode === 'ru_sr' ? D(ITEMS[id].sr) : ITEMS[id].ru), (id) => {
     chosen = id;

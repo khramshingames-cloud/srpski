@@ -42,16 +42,37 @@ function ttsFallback(text) {
 
 export const fileFor = (text, voice = settings().voice) => `audio/${voice}/${audioKey(text)}.mp3`;
 
-export function speak(text, opts = {}) {
+// mp3 держим в памяти как blob: так Safari не спотыкается о Range-запросы к офлайн-кэшу,
+// а повторное воспроизведение мгновенное.
+const blobs = new Map();
+async function blobUrl(url) {
+  if (!blobs.has(url)) {
+    blobs.set(url, fetch(url).then((r) => {
+      if (!r.ok) throw new Error(r.status);
+      return r.blob();
+    }).then((b) => URL.createObjectURL(b)).catch((e) => { blobs.delete(url); throw e; }));
+  }
+  return blobs.get(url);
+}
+
+export function preload(texts) {
+  for (const t of texts) blobUrl(fileFor(t)).catch(() => {});
+}
+
+let seq = 0;
+export async function speak(text, opts = {}) {
   const now = Date.now();
   const again = text === last.text && now - last.at < 10000;
   const slow = opts.slow ?? (again ? !last.slow : false);
   last = { text, at: now, slow };
+  const my = ++seq;
 
   synth?.cancel();
   player.pause();
-  player.onerror = () => ttsFallback(text);
-  player.src = fileFor(text, opts.voice);
+  let src;
+  try { src = await blobUrl(fileFor(text, opts.voice)); } catch { if (my === seq) ttsFallback(text); return; }
+  if (my !== seq) return; // пока грузилось, попросили другое слово
+  player.src = src;
   const rate = settings().rate * (slow ? 0.7 : 1);
   player.defaultPlaybackRate = rate;
   player.playbackRate = rate;

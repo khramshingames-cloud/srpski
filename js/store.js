@@ -120,9 +120,26 @@ export function finishLesson(lessonId) {
   save();
 }
 
+// ---- уровни внутри урока ----
+// Пока урок не пройден до конца, копим ошибки и показанные слова; в повторение всё уходит после финала.
+export const levelProgress = (lessonId) => state.partial?.[lessonId] || null;
+
+export function finishLevel(lessonId, levelCount, errors, seenIds) {
+  state.partial ||= {};
+  const p = (state.partial[lessonId] ||= { level: 0, errors: {}, seen: [] });
+  for (const [k, v] of Object.entries(errors)) p.errors[k] = (p.errors[k] || 0) + v;
+  p.seen = [...new Set([...p.seen, ...seenIds])];
+  p.level++;
+  const d = day();
+  d.levels = (d.levels || 0) + 1;
+  if (p.level < levelCount) { save(); return null; }
+  delete state.partial[lessonId];
+  return p;
+}
+
 export function streak() {
   let n = 0;
-  const active = (d) => state.days[d] && (state.days[d].review || state.days[d].lessons);
+  const active = (d) => state.days[d] && (state.days[d].review || state.days[d].lessons || state.days[d].levels);
   // сегодня ещё не занимались — серия не обрывается
   let off = active(today()) ? 0 : -1;
   while (active(today(off))) { n++; off--; }

@@ -28,49 +28,55 @@ const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const each = (ids, t) => shuffle(ids).map((id) => ({ t, id }));
 const matchTask = (ids) => ({ t: 'match', ids: shuffle(ids).slice(0, 5) });
 
-export function buildLessonTasks(lessonId) {
+// Урок делится на короткие уровни по 1–2 минуты. После каждого — поздравление.
+// prev — слова из прошлых уроков, которые подмешиваются для закрепления.
+export function buildLessonLevels(lessonId, prev = []) {
   const L = LESSON[lessonId];
-  if (L.type === 'words') return wordLesson(L.itemIds);
-  if (L.type === 'phrases') return phraseLesson(L.itemIds);
-  return grammarLesson(L);
+  if (L.type === 'words') return wordLevels(L.itemIds, prev);
+  if (L.type === 'phrases') return phraseLevels(L.itemIds);
+  return grammarLevels(L);
 }
 
-// 10 слов: знакомимся пятёрками, затем круги разными типами карточек, в конце — контрольный прогон.
-function wordLesson(ids) {
+const intro = (ids) => ids.map((id) => ({ t: 'intro', id }));
+const exTask = (ex) => (ex.k === 'build' ? { t: 'build', id: ex.itemId } : { t: 'cloze', ex });
+
+// 10 слов: знакомимся пятёрками, затем пары, слух и буквы, в конце — контрольный прогон.
+function wordLevels(ids, prev) {
   const a = ids.slice(0, 5), b = ids.slice(5);
+  const half = shuffle(ids);
   return [
-    ...a.map((id) => ({ t: 'intro', id })),
-    ...each(a, 'sr_ru'),
-    matchTask(a),
-    ...b.map((id) => ({ t: 'intro', id })),
-    ...each(b, 'sr_ru'),
-    matchTask(b),
-    ...each(ids, 'ru_sr'),
-    ...each(ids, 'audio'),
-    ...each(ids, 'letters'),
-    ...shuffle(ids).map((id) => ({ t: pick(['ru_sr', 'audio', 'letters']), id, final: true })),
+    { title: 'Новые слова', emoji: '🌱', tasks: [...intro(a), ...each(a, 'sr_ru'), ...each(a, 'ru_sr')] },
+    { title: 'Ещё новые слова', emoji: '🌿', tasks: [...intro(b), ...each(b, 'sr_ru'), ...each(b, 'ru_sr'),
+      ...prev.map((id) => ({ t: pick(['ru_sr', 'audio']), id }))] },
+    { title: 'Найди пары', emoji: '🧩', tasks: [matchTask(a), matchTask(b), ...each(ids, 'ru_sr')] },
+    { title: 'На слух', emoji: '👂', tasks: [...each(ids, 'audio'), ...each(half.slice(0, 5), 'letters')] },
+    { title: 'Финал', emoji: '🏆', tasks: [...each(half.slice(5), 'letters'),
+      ...shuffle(ids).map((id) => ({ t: pick(['ru_sr', 'audio', 'letters']), id, final: true }))] },
   ];
 }
 
-function phraseLesson(ids) {
+function phraseLevels(ids) {
+  const n = Math.ceil(ids.length / 2), a = ids.slice(0, n), b = ids.slice(n);
   return [
-    ...ids.map((id) => ({ t: 'intro', id })),
-    ...each(ids, 'sr_ru'),
-    ...each(ids, 'ru_sr'),
-    ...each(ids, 'audio'),
-    ...each(ids, 'build'),
-    ...shuffle(ids).map((id) => ({ t: pick(['ru_sr', 'build']), id, final: true })),
+    { title: 'Новые фразы', emoji: '🌱', tasks: [...intro(a), ...each(a, 'sr_ru')] },
+    { title: 'Ещё фразы', emoji: '🌿', tasks: [...intro(b), ...each(b, 'sr_ru')] },
+    { title: 'Как сказать?', emoji: '💬', tasks: [...each(ids, 'ru_sr'), ...each(ids, 'audio')] },
+    { title: 'Собери фразу', emoji: '🧩', tasks: each(ids, 'build') },
+    { title: 'Финал', emoji: '🏆', tasks: shuffle(ids).map((id) => ({ t: pick(['ru_sr', 'build', 'audio']), id, final: true })) },
   ];
 }
 
-function grammarLesson(L) {
+function grammarLevels(L) {
   const words = L.itemIds.filter((id) => ITEMS[id].kind === 'word');
+  const builds = shuffle(L.exercises.filter((e) => e.k === 'build'));
+  const clozes = shuffle(L.exercises.filter((e) => e.k === 'cloze'));
+  const h = Math.ceil(builds.length / 2);
   return [
-    ...L.rules.map((_, i) => ({ t: 'rule', lesson: L.id, i })),
-    ...words.map((id) => ({ t: 'intro', id })),
-    ...each(words, 'sr_ru'),
-    ...each(words, 'ru_sr'),
-    ...shuffle(L.exercises).map((ex) => ex.k === 'build' ? { t: 'build', id: ex.itemId } : { t: 'cloze', ex }),
+    { title: 'Правило', emoji: '📐', tasks: [...L.rules.map((_, i) => ({ t: 'rule', lesson: L.id, i })),
+      ...intro(words), ...each(words, 'sr_ru'), ...each(words, 'ru_sr')] },
+    { title: 'Вставь слово', emoji: '✏️', tasks: clozes.map(exTask) },
+    { title: 'Собери предложение', emoji: '🧩', tasks: builds.slice(0, h).map(exTask) },
+    { title: 'Финал', emoji: '🏆', tasks: shuffle([...builds.slice(h), ...clozes.slice(0, 2)]).map(exTask) },
   ];
 }
 
