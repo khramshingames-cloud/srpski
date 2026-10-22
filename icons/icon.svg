@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#0c4076"/>
+  <rect y="372" width="512" height="140" fill="#ffffff"/>
+  <rect y="372" width="512" height="140" rx="0" fill="#ffffff"/>
+  <path d="M0 372h512v28H0z" fill="#c6363c"/>
+  <text x="256" y="300" font-family="Arial, sans-serif" font-weight="700" font-size="240" fill="#fff" text-anchor="middle">Ћ</text>
+</svg>
