@@ -1,7 +1,7 @@
 import { COURSE, ITEMS, LESSON } from './data.js';
 import * as store from './store.js';
 import { buildLessonTasks, buildReviewTasks, retryTasks, distractors, shuffle } from './engine.js';
-import { speak, voiceInfo, hasSpeech } from './audio.js';
+import { speak, stop, VOICES } from './audio.js';
 import { toCyr, letters, norm, stripDiacritics } from './translit.js';
 
 const $ = (sel, el = document) => el.querySelector(sel);
@@ -134,9 +134,51 @@ function renderWords() {
   view.onclick = (e) => { const li = e.target.closest('li[data-sr]'); if (li) say(li.dataset.sr); };
 }
 
+// Прослушать всё подряд и отметить плохо озвученное. Отметки — только в этом браузере,
+// список копируется и отправляется, чтобы перегенерировать или заменить записью носителя.
+const BAD_KEY = 'srpski.badAudio';
+const loadBad = () => { try { return new Set(JSON.parse(localStorage.getItem(BAD_KEY)) || []); } catch { return new Set(); } };
+const saveBad = (set) => { try { localStorage.setItem(BAD_KEY, JSON.stringify([...set])); } catch {} };
+
+function renderAudioCheck() {
+  const voice = store.settings().voice;
+  const bad = loadBad();
+  const mark = (sr) => `${voice}:${sr}`;
+  const rows = COURSE.map((L) => `<h4 class="w-group">${esc(L.title)}</h4><ul class="words">${L.itemIds.map((id) => {
+    const it = ITEMS[id];
+    return `<li data-sr="${esc(it.sr)}"><span class="w-e">${it.emoji}</span>
+      <div class="w-t"><b>${esc(D(it.sr))}</b><small>${esc(it.ru)}</small></div>
+      <button class="flag ${bad.has(mark(it.sr)) ? 'on' : ''}" data-flag="${esc(it.sr)}" aria-label="Плохо озвучено">👎</button></li>`;
+  }).join('')}</ul>`).join('');
+  view.innerHTML = `<button class="link" data-act="back">← Настройки</button>
+    <h2 class="page-h">Проверка озвучки</h2>
+    <p class="muted-t page-sub">Голос: ${VOICES[voice]}. Нажми на строку — прозвучит. 👎 — если ударение или произношение неверные.</p>
+    <div class="sticky-bar"><button class="btn" data-act="copy">Скопировать отмеченные (<span id="badn">${[...bad].filter((x) => x.startsWith(voice + ':')).length}</span>)</button></div>
+    ${rows}`;
+  view.onclick = async (e) => {
+    const f = e.target.closest('[data-flag]');
+    if (f) {
+      const k = mark(f.dataset.flag);
+      bad.has(k) ? bad.delete(k) : bad.add(k);
+      f.classList.toggle('on', bad.has(k));
+      saveBad(bad);
+      $('#badn').textContent = [...bad].filter((x) => x.startsWith(voice + ':')).length;
+      return;
+    }
+    const b = e.target.closest('[data-act]');
+    if (b?.dataset.act === 'back') return renderSettings();
+    if (b?.dataset.act === 'copy') {
+      const text = 'Плохая озвучка:\n' + [...bad].sort().join('\n');
+      try { await navigator.clipboard.writeText(text); alert('Скопировано — пришли этот список мне'); } catch { prompt('Скопируй список:', text); }
+      return;
+    }
+    const li = e.target.closest('li[data-sr]');
+    if (li) say(li.dataset.sr);
+  };
+}
+
 function renderSettings() {
   const s = store.settings();
-  const v = voiceInfo();
   view.innerHTML = `<h2 class="page-h">Настройки</h2>
     <div class="set">
       <label>Азбука</label>
@@ -152,10 +194,17 @@ function renderSettings() {
     </div>
     <div class="set row"><label>Автоозвучка карточек</label><input type="checkbox" data-k="autoplay" ${s.autoplay ? 'checked' : ''}></div>
     <div class="set">
-      <label>Скорость речи: <b id="rt">${s.rate}</b></label>
-      <input type="range" min="0.5" max="1.2" step="0.05" value="${s.rate}" data-k="rate">
-      <small>Голос: ${v ? esc(v) : hasSpeech() ? '⚠️ сербский голос не найден, используется голос по умолчанию' : '⚠️ браузер не поддерживает озвучку'}</small>
-      <button class="btn ghost" data-act="test">🔊 Проверить: «Dobar dan, kako si?»</button>
+      <label>Голос</label>
+      <div class="seg" data-k="voice">
+        ${Object.entries(VOICES).map(([k, name]) => `<button data-v="${k}" class="${s.voice === k ? 'on' : ''}">${name}</button>`).join('')}
+      </div>
+      <label class="mt">Скорость озвучки: <b id="rt">${s.rate}</b></label>
+      <input type="range" min="0.6" max="1.2" step="0.05" value="${s.rate}" data-k="rate">
+      <small>Нажми 🔊 ещё раз — фраза прозвучит медленнее.</small>
+      <div class="btns mt">
+        <button class="btn ghost" data-act="test">🔊 «Dobar dan, kako si?»</button>
+        <button class="btn ghost" data-act="audio-check">Проверка озвучки</button>
+      </div>
     </div>
     <div class="set">
       <label>Прогресс</label>
@@ -175,10 +224,17 @@ function renderSettings() {
 
   view.onclick = (e) => {
     const seg = e.target.closest('.seg button');
-    if (seg) { store.setSetting(seg.parentElement.dataset.k, seg.dataset.v); renderSettings(); return; }
+    if (seg) {
+      const k = seg.parentElement.dataset.k;
+      store.setSetting(k, seg.dataset.v);
+      renderSettings();
+      if (k === 'voice') speak('Dobar dan, kako si?', { slow: false });
+      return;
+    }
     const b = e.target.closest('[data-act]');
     if (!b) return;
     if (b.dataset.act === 'test') say('Dobar dan, kako si?');
+    if (b.dataset.act === 'audio-check') renderAudioCheck();
     if (b.dataset.act === 'reset' && confirm('Удалить весь прогресс?')) { store.resetAll(); renderSettings(); }
     if (b.dataset.act === 'export') {
       const a = document.createElement('a');
@@ -245,7 +301,7 @@ function runSession({ title, tasks, pool, onDone }) {
   const card = $('#card', ov), foot = $('#foot', ov), go = $('#go', ov), fb = $('.fb', ov);
 
   $('.x', ov).onclick = () => { if (confirm('Выйти? Прогресс этой сессии не сохранится.')) close(); };
-  function close() { speechSynthesis?.cancel(); ov.remove(); document.body.classList.remove('in-session'); renderTabs(); }
+  function close() { stop(); ov.remove(); document.body.classList.remove('in-session'); renderTabs(); }
 
   const markError = (id) => { S.errors[id] = (S.errors[id] || 0) + 1; };
   const requeue = (task, wrongIds) => {

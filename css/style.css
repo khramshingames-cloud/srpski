@@ -231,3 +231,9 @@ body.in-session nav { display: none; }
 .finish h2 { margin: 8px 0; }
 .hard { list-style: none; padding: 0; text-align: left; display: grid; gap: 6px; max-width: 360px; margin: 10px auto; }
 .hard li { background: var(--card); padding: 8px 12px; border-radius: 10px; }
+
+.mt { margin-top: 14px; }
+.flag { border: 0; background: none; font-size: 20px; padding: 6px; opacity: .25; filter: grayscale(1); }
+.flag.on { opacity: 1; filter: none; }
+.sticky-bar { position: sticky; top: 0; z-index: 2; background: var(--bg); padding: 8px 0; }
+.sticky-bar .btn { margin: 0; width: 100%; }

@@ -44,6 +44,13 @@ export function norm(text) {
   return toLat(text).toLowerCase().replace(/[.,!?¿¡;:"«»—-]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+// Имя аудиофайла для текста: «Dobar dan!» -> dobar_dan, «čaj» -> chaj
+export function audioKey(text) {
+  return toLat(text).toLowerCase()
+    .replace(/dž/g, 'dzh').replace(/č/g, 'ch').replace(/ć/g, 'cj').replace(/š/g, 'sh').replace(/ž/g, 'zh').replace(/đ/g, 'dj')
+    .replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+}
+
 export function stripDiacritics(text) {
   return text.replace(/[čć]/g, 'c').replace(/š/g, 's').replace(/ž/g, 'z').replace(/đ/g, 'dj');
 }

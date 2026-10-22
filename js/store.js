@@ -13,7 +13,8 @@ const DEFAULTS = {
   script: 'lat',     // lat | cyr
   reviewSize: 20,    // сколько единиц в ежедневном повторении
   autoplay: true,
-  rate: 0.85,
+  rate: 1,           // множитель скорости озвучки
+  voice: 'f',        // f — Софи, m — Никола
 };
 
 let state = load();
