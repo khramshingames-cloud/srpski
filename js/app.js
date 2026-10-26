@@ -130,6 +130,7 @@ function renderHome() {
         <small>${k.known + k.learning} слов · ${k.phrases + k.phrasesLearning} фраз · ${k.grammar} тем</small>
       </div>
     </button>
+    ${lessonStrip()}
     ${unit ? `<p class="unit-line">${unit.emoji} Блок ${UNITS.indexOf(unit) + 1} · ${esc(unit.title)} <span>${unitDone}/${unitLessons.length}</span></p>` : ''}
     ${reviewCard}
     ${lessonCard}
@@ -140,6 +141,8 @@ function renderHome() {
     </button>` : ''}`;
 
   view.onclick = (e) => {
+    const c = e.target.closest('[data-lesson]');
+    if (c) return openLesson(c.dataset.lesson);
     const b = e.target.closest('[data-act]');
     if (!b) return;
     if (b.dataset.act === 'review') startReview();
@@ -147,7 +150,14 @@ function renderHome() {
     if (b.dataset.act === 'quick') startQuick();
     if (b.dataset.act === 'lesson') startLesson(b.dataset.id);
     if (b.dataset.act === 'progress') { tab = 'progress'; renderTabs(); }
+    if (b.dataset.act === 'course') { tab = 'course'; renderTabs(); }
   };
+  // лента сразу показывает текущий урок, а прошлый выглядывает слева — видно, что можно листать назад
+  const curCard = view.querySelector('.strip-card.current');
+  if (curCard) {
+    const strip = curCard.parentElement;
+    strip.scrollLeft += curCard.getBoundingClientRect().left - strip.getBoundingClientRect().left - 18 - 70;
+  }
 }
 
 const levelsOf = (lessonId) => buildLessonLevels(lessonId);
@@ -190,8 +200,7 @@ function renderCourse() {
     }).join('')}`;
   view.onclick = (e) => {
     const li = e.target.closest('li[data-id]');
-    if (!li || li.classList.contains('locked')) return;
-    startLesson(li.dataset.id);
+    if (li) openLesson(li.dataset.id);
   };
 }
 
@@ -338,6 +347,107 @@ function renderSettings() {
   };
 }
 
+// ================= Карточка урока (просмотр любого урока) =================
+// Пройденный — можно повторить целиком или с любого уровня; текущий — начать/продолжить;
+// будущий — посмотреть, что в нём, и откуда он откроется.
+
+function lessonStatus(L) {
+  if (store.isDone(L.id)) return 'done';
+  return store.nextLesson()?.id === L.id ? 'current' : 'locked';
+}
+const lessonEmoji = (L) => (L.type === 'dialog' ? L.emoji : L.type === 'grammar' ? '📐' : L.type === 'phrases' ? '💬' : ITEMS[L.itemIds[0]]?.emoji || '📘');
+// Повторение перед новым уроком — как на главной: начатый урок можно продолжать всегда
+function needsReviewFirst(L) {
+  return store.pickReview().length > 0 && !store.reviewDoneToday() && !store.levelProgress(L.id);
+}
+
+function lessonContent(L) {
+  const nastya = store.currentProfile() === 'nastya';
+  const row = (it) => `<li data-say="${esc(nastya && it.ex ? it.ex.sr : it.sr)}"><span class="w-e">${it.emoji}</span>
+    <div class="w-t"><b>${SRH(it)}</b><small>${esc(it.ru)}</small>${nastya && it.ex ? `<span class="w-ex">${esc(D(it.ex.sr))}</span>` : ''}</div><span class="w-play">🔊</span></li>`;
+  const words = L.itemIds.filter((id) => ['word', 'phrase'].includes(ITEMS[id].kind)).map((id) => ITEMS[id]);
+  if (L.type === 'dialog') {
+    return `<div class="sh-scene"><span>${L.who.emoji}</span><p>${esc(L.scene)}</p></div>
+      <ul class="words sh-list">${L.lines.filter((l) => l[0] === 'me').map((l) => `<li data-say="${esc(l[1])}"><span class="w-e">🙂</span>
+        <div class="w-t"><b>${esc(D(l[1]))}</b><small>${esc(l[2])}</small></div><span class="w-play">🔊</span></li>`).join('')}</ul>`;
+  }
+  return `${L.type === 'grammar' ? `<ul class="sh-rules">${L.rules.map((r) => `<li>📐 ${esc(r.title)}</li>`).join('')}</ul>` : ''}
+    ${words.length ? `<ul class="words sh-list">${words.map(row).join('')}</ul>` : ''}`;
+}
+
+function openLesson(lessonId) {
+  const L = LESSON[lessonId], unit = UNIT[L.unit];
+  const status = lessonStatus(L);
+  const levels = buildLessonLevels(lessonId);
+  const lvlDone = status === 'done' ? levels.length : store.levelProgress(lessonId)?.level || 0;
+  const prevL = COURSE[COURSE.indexOf(L) - 1];
+  const locked = status === 'locked';
+  const waitReview = status === 'current' && needsReviewFirst(L);
+
+  const sheet = document.createElement('div');
+  sheet.className = 'sheet-wrap';
+  sheet.innerHTML = `<div class="sheet" role="dialog" aria-label="${esc(L.title)}">
+    <div class="sh-grip"></div>
+    <button class="sh-x" aria-label="Закрыть">✕</button>
+    <p class="sh-unit">${unit.emoji} Блок ${UNITS.indexOf(unit) + 1} · ${esc(unit.title)} · ${unit.cefr}</p>
+    <div class="sh-head"><span class="sh-emoji">${lessonEmoji(L)}</span>
+      <div><span class="badge ${L.type}">${TYPE_LABEL[L.type]}</span>
+        <h2>${esc(L.title)}</h2>
+        <span class="sh-status ${status}">${status === 'done' ? '✓ Пройден' : status === 'current' ? (lvlDone ? `▶ Идёт: уровень ${lvlDone + 1} из ${levels.length}` : '▶ Следующий') : '🔒 Впереди'}</span>
+      </div></div>
+    ${lessonContent(L)}
+    <h3 class="sh-h">Уровни</h3>
+    <ul class="sh-levels">${levels.map((lv, i) => {
+      const passed = i < lvlDone;
+      return `<li class="${passed ? 'on' : i === lvlDone && !locked ? 'cur' : ''}">
+        <span class="sh-lv-e">${lv.emoji}</span><div><b>${esc(lv.title)}</b><small>${lv.tasks.length} карточек</small></div>
+        ${passed ? `<button class="btn ghost sm" data-replay="${i}">Повторить</button>` : passed || i !== lvlDone || locked ? '' : '<span class="sh-next">дальше</span>'}
+      </li>`;
+    }).join('')}</ul>
+    <div class="sh-actions">
+      ${status === 'done' ? '<button class="btn big" data-replay="0">🔁 Повторить урок целиком</button><p class="fine">Прогресс не сбрасывается: ошибки просто чаще попадут в повторение.</p>' : ''}
+      ${status === 'current' ? (waitReview
+        ? '<button class="btn big" disabled>Сначала повторение на главной</button>'
+        : `<button class="btn big" data-start>${lvlDone ? `Продолжить: уровень ${lvlDone + 1}` : 'Начать урок'}</button>`) : ''}
+      ${locked ? `<button class="btn big" disabled>🔒 Откроется после «${esc(prevL?.title || '')}»</button>` : ''}
+    </div>
+  </div>`;
+  document.body.appendChild(sheet);
+  document.body.classList.add('sheet-open');
+  requestAnimationFrame(() => sheet.classList.add('in'));
+
+  const close = () => {
+    sheet.classList.remove('in');
+    document.body.classList.remove('sheet-open');
+    setTimeout(() => sheet.remove(), 220);
+  };
+  sheet.onclick = (e) => {
+    if (e.target === sheet || e.target.closest('.sh-x')) return close();
+    const r = e.target.closest('[data-replay]');
+    if (r) { close(); return startLesson(lessonId, { replayLevel: +r.dataset.replay }); }
+    if (e.target.closest('[data-start]')) { close(); return startLesson(lessonId); }
+    const s = e.target.closest('[data-say]');
+    if (s) say(s.dataset.say);
+  };
+}
+
+// Лента уроков на главной: пара пройденных, текущий и несколько следующих
+function lessonStrip() {
+  const cur = store.nextLesson() || COURSE[COURSE.length - 1];
+  const i = COURSE.indexOf(cur);
+  const items = COURSE.slice(Math.max(0, i - 3), i + 5);
+  return `<div class="strip-h"><b>Уроки</b><button class="link" data-act="course">Весь курс ›</button></div>
+    <div class="strip">${items.map((L) => {
+      const st = lessonStatus(L);
+      return `<button class="strip-card ${st}" data-lesson="${L.id}">
+        <span class="sc-e">${lessonEmoji(L)}</span>
+        <span class="sc-type">${TYPE_LABEL[L.type]}</span>
+        <b>${esc(L.title)}</b>
+        <span class="sc-st">${st === 'done' ? '✓ пройден' : st === 'current' ? '▶ сейчас' : '🔒 впереди'}</span>
+      </button>`;
+    }).join('')}</div>`;
+}
+
 // ================= Сессия (урок или повторение) =================
 
 // Быстрое повторение: правильные ответы не сдвигают расписание (чтобы не «перескакивать» интервалы),
@@ -378,9 +488,10 @@ function prevWords(L, n = 4) {
   return shuffle(ids.sort((a, b) => store.strength(a) - store.strength(b)).slice(0, n * 2)).slice(0, n);
 }
 
-function startLesson(lessonId) {
+function startLesson(lessonId, { replayLevel } = {}) {
   const L = LESSON[lessonId];
   const levels = buildLessonLevels(lessonId, prevWords(L));
+  if (replayLevel != null) return replayLesson(L, levels, replayLevel);
   let n = store.levelProgress(lessonId)?.level || 0;
   if (n >= levels.length) n = 0;
   const level = levels[n];
@@ -407,6 +518,24 @@ function startLesson(lessonId) {
         next: nl && (!store.pickReview().length || store.reviewDoneToday())
           ? { label: `Следующий урок: ${nl.title}`, run: () => startLesson(nl.id) } : null,
       };
+    },
+  });
+}
+
+function replayLesson(L, levels, n) {
+  const level = levels[n];
+  runSession({
+    title: `${L.title} · ${level.title}`,
+    tasks: level.tasks,
+    pool: [...new Set([...store.learnedIds(), ...L.itemIds])],
+    onDone(errors, seen) {
+      [...seen].filter((id) => ITEMS[id] && store.progress(id)).forEach((id) => store.record(id, errors[id] || 0));
+      store.save();
+      const nx = levels[n + 1];
+      return nx
+        ? { emoji: level.emoji, title: `Уровень ${n + 1} из ${levels.length} повторён!`,
+          next: { label: `Дальше: ${nx.emoji} ${nx.title}`, run: () => startLesson(L.id, { replayLevel: n + 1 }) } }
+        : { emoji: '🏆', title: `Урок «${L.title}» повторён!`, big: true };
     },
   });
 }
