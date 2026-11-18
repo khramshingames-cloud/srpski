@@ -1,47 +1,37 @@
-// Прогресс и интервальное повторение (упрощённый SM-2).
-//
-// У каждой выученной единицы есть интервал (дней до следующего показа) и «лёгкость».
-// Ответил с первого раза -> интервал растёт: 1 -> 3 -> ~7 -> ~17 -> ...
-// Ошибся -> интервал сбрасывается на 1 день, лёгкость падает (слово будет приходить чаще).
+// Прогресс: какие уровни пройдены (хотя бы один полный круг карточек), сколько кругов,
+// активность по дням и настройки. Хранится в телефоне (localStorage).
 
-import { COURSE, ITEMS } from './data.js';
+import { LEVELS } from './levels.js';
 
-// Два режима — два независимых профиля со своим прогрессом и настройками.
-// Вова живёт под старым ключом, поэтому его прогресс никуда не делся.
-export const PROFILES = {
-  vova: { name: 'Вова', key: 'srpski.v1' },
-  nastya: { name: 'Настя', key: 'srpski.nastya' },
-};
-const PROFILE_KEY = 'srpski.profile';
-let profile = (() => { try { return PROFILES[localStorage.getItem(PROFILE_KEY)] ? localStorage.getItem(PROFILE_KEY) : 'vova'; } catch { return 'vova'; } })();
-export const currentProfile = () => profile;
-const MAX_INTERVAL = 60;
+const KEY = 'srpski.v1'; // ключ прежний — прогресс прошлых версий подхватывается
 
 const DEFAULTS = {
-  script: 'lat',     // lat | cyr
-  reviewSize: 20,    // сколько единиц в ежедневном повторении
-  autoplay: true,
-  rate: 1,           // множитель скорости озвучки
-  voice: 'f',        // f — Софи, m — Никола
-  stress: true,      // подсвечивать ударную гласную
+  script: 'lat',   // lat | cyr
+  autoplay: true,  // озвучивать карточку при перевороте
+  rate: 1,         // скорость озвучки
+  voice: 'f',      // f — Софи, m — Никола
+  stress: true,    // подсвечивать ударную гласную
 };
 
-const fresh = (settings = DEFAULTS) => ({ v: 2, items: {}, done: [], days: {}, partial: {}, stats: {}, settings: { ...settings } });
+const fresh = (settings = DEFAULTS) => ({ v: 3, levels: {}, days: {}, settings: { ...settings } });
 
-// v1 → v2: курс расширен до 500 слов и уроки переставлены. Выученные слова сохраняем (они по тексту),
-// а пройденными считаем уроки, все слова которых уже выучены.
+// v1/v2 (старый курс с уроками) → v3: уровень считается пройденным, если все его слова уже учились.
 function migrate(s) {
-  if (s.v === 1) {
-    s = { ...fresh(s.settings), items: s.items, days: s.days };
-    s.done = COURSE.filter((L) => L.itemIds.length && L.itemIds.every((id) => s.items[id])).map((L) => L.id);
+  if (s.v === 3) return s;
+  const known = new Set(Object.keys(s.items || {}));
+  const levels = {};
+  for (const L of LEVELS) {
+    const words = L.cards.filter((c) => c.kind === 'word');
+    if (words.length && words.every((c) => known.has(c.id))) levels[L.id] = { rounds: 1, first: null, last: null };
   }
-  return s;
+  const { reviewSize, ...settings } = s.settings || {};
+  return { ...fresh({ ...DEFAULTS, ...settings }), levels, days: s.days || {} };
 }
 
 function load() {
   try {
-    const raw = JSON.parse(localStorage.getItem(PROFILES[profile].key));
-    if (raw && (raw.v === 1 || raw.v === 2)) {
+    const raw = JSON.parse(localStorage.getItem(KEY));
+    if (raw && raw.v >= 1) {
       const s = migrate(raw);
       return { ...fresh(), ...s, settings: { ...DEFAULTS, ...s.settings } };
     }
@@ -52,28 +42,17 @@ function load() {
 let state = load();
 
 export function save() {
-  try { localStorage.setItem(PROFILES[profile].key, JSON.stringify(state)); } catch {}
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
 }
-
-export function switchProfile(p) {
-  if (!PROFILES[p] || p === profile) return;
-  save();
-  profile = p;
-  try { localStorage.setItem(PROFILE_KEY, p); } catch {}
-  state = load();
-}
+save();
 
 export const settings = () => state.settings;
 export function setSetting(k, v) { state.settings[k] = v; save(); }
 
-export function resetAll() {
-  state = fresh(state.settings);
-  save();
-}
+export function resetAll() { state = fresh(state.settings); save(); }
 export const exportState = () => JSON.stringify(state);
 export function importState(json) {
   const s = migrate(JSON.parse(json));
-  if (s.v !== 2) throw new Error('bad version');
   state = { ...fresh(), ...s, settings: { ...DEFAULTS, ...s.settings } };
   save();
 }
@@ -84,119 +63,44 @@ export function today(offset = 0) {
   d.setDate(d.getDate() + offset);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
-const dayDiff = (a, b) => Math.round((new Date(a) - new Date(b)) / 86400000);
+function day() { return (state.days[today()] ||= {}); }
 
-// ---- единицы ----
-export const progress = (id) => state.items[id];
-export const learnedIds = () => Object.keys(state.items).filter((id) => ITEMS[id]);
-export const isDone = (lessonId) => state.done.includes(lessonId);
-export const nextLesson = () => COURSE.find((l) => !isDone(l.id));
+// ---- уровни ----
+export const levelInfo = (id) => state.levels[id] || null;
+export const isPassed = (id) => !!state.levels[id];
+export const passedLevels = () => LEVELS.filter((L) => isPassed(L.id));
+// Текущий — первый непройденный; всё до него открыто, дальше — закрыто
+export const currentLevel = () => LEVELS.find((L) => !isPassed(L.id)) || null;
+export const isOpen = (id) => {
+  const cur = currentLevel();
+  return isPassed(id) || !cur || cur.id === id;
+};
 
-// Сила слова 0..1 для полоски в словаре
-export function strength(id) {
-  const p = state.items[id];
-  if (!p) return 0;
-  return Math.min(1, Math.log2(1 + p.iv) / Math.log2(1 + 30));
-}
-
-// Записать результат одной единицы за сессию. errors — сколько раз ошибся в этой сессии.
-export function record(id, errors) {
+// Полный круг по колоде. levelIds — уровни, чьи карточки были в круге (у разминки и микса их несколько).
+// Возвращает true, если какой-то уровень пройден впервые.
+export function finishRound(levelIds) {
   const t = today();
-  let p = state.items[id];
-  if (!p) {
-    // первое знакомство в уроке
-    p = state.items[id] = { iv: 1, ease: errors ? 2.3 : 2.5, reps: 1, lapses: 0, due: today(1), last: t, seen: 1 };
-    return;
+  let firstTime = false;
+  for (const id of levelIds) {
+    if (!state.levels[id]) { state.levels[id] = { rounds: 0, first: t }; firstTime = true; }
+    state.levels[id].rounds++;
+    state.levels[id].last = t;
   }
-  // повторное в тот же день не двигает интервал вверх, только вниз при ошибке
-  const sameDay = p.last === t;
-  if (errors) {
-    p.lapses++;
-    p.ease = Math.max(1.3, p.ease - 0.2);
-    p.iv = 1;
-    p.reps = 1;
-  } else if (!sameDay) {
-    p.iv = p.reps <= 1 ? 3 : Math.min(MAX_INTERVAL, Math.round(p.iv * p.ease));
-    p.ease = Math.min(3, p.ease + 0.05);
-    p.reps++;
-  }
-  p.due = today(p.iv);
-  p.last = t;
-  p.seen++;
-}
-
-// Ежедневная подборка: сначала «пора повторить» (самые просроченные и трудные),
-// если их меньше лимита — добираем давно не виденными, чтобы все слова крутились.
-// extra — дополнительное повторение по желанию: можно брать и то, что уже видели сегодня.
-export function pickReview(n = state.settings.reviewSize, extra = false) {
-  const t = today();
-  const all = learnedIds().map((id) => ({ id, p: state.items[id] }));
-  const due = all.filter((x) => x.p.due <= t)
-    .sort((a, b) => dayDiff(t, b.p.due) - dayDiff(t, a.p.due) || a.p.ease - b.p.ease);
-  const rest = all.filter((x) => x.p.due > t && (extra || x.p.last !== t))
-    .sort((a, b) => (a.p.last < b.p.last ? -1 : a.p.last > b.p.last ? 1 : a.p.ease - b.p.ease));
-  return [...due, ...rest].slice(0, n).map((x) => x.id);
-}
-
-export const dueCount = () => learnedIds().filter((id) => state.items[id].due <= today()).length;
-
-// ---- дни и серия ----
-function day() { return (state.days[today()] ||= { review: false, lessons: 0 }); }
-export const reviewDoneToday = () => !!state.days[today()]?.review;
-export const lessonsToday = () => state.days[today()]?.lessons || 0;
-
-export function finishReview() { day().review = true; save(); }
-export function finishLesson(lessonId) {
-  if (!state.done.includes(lessonId)) state.done.push(lessonId);
-  day().lessons++;
+  const d = day();
+  d.rounds = (d.rounds || 0) + 1;
   save();
+  return firstTime;
 }
 
 // ---- статистика ----
-// По типам карточек и частям речи копим [верно, ошибок]; по дням — карточки, верные, время.
-export function logAnswer(type, ok, id) {
-  const st = (state.stats ||= {});
-  const bump = (group, key) => {
-    const g = (st[group] ||= {});
-    const v = (g[key] ||= [0, 0]);
-    v[ok ? 0 : 1]++;
-  };
-  bump('types', type);
-  if (id && ITEMS[id]) bump('pos', ITEMS[id].pos);
-  const d = day();
-  d.cards = (d.cards || 0) + 1;
-  if (ok) d.ok = (d.ok || 0) + 1;
-}
-export function addTime(ms) {
-  const d = day();
-  d.ms = (d.ms || 0) + Math.min(ms, 60 * 60 * 1000);
-  save();
-}
-export const stats = () => state.stats || {};
+export function countCard() { const d = day(); d.cards = (d.cards || 0) + 1; }
+export function addTime(ms) { const d = day(); d.ms = (d.ms || 0) + Math.min(ms, 60 * 60 * 1000); save(); }
 export const daysLog = () => state.days;
-
-// ---- уровни внутри урока ----
-// Пока урок не пройден до конца, копим ошибки и показанные слова; в повторение всё уходит после финала.
-export const levelProgress = (lessonId) => state.partial?.[lessonId] || null;
-
-export function finishLevel(lessonId, levelIndex, levelCount, errors, seenIds) {
-  state.partial ||= {};
-  const p = (state.partial[lessonId] ||= { level: 0, errors: {}, seen: [] });
-  for (const [k, v] of Object.entries(errors)) p.errors[k] = (p.errors[k] || 0) + v;
-  p.seen = [...new Set([...p.seen, ...seenIds])];
-  p.level = levelIndex + 1;
-  const d = day();
-  d.levels = (d.levels || 0) + 1;
-  if (p.level < levelCount) { save(); return null; }
-  delete state.partial[lessonId];
-  return p;
-}
 
 export function streak() {
   let n = 0;
-  const active = (d) => state.days[d] && (state.days[d].review || state.days[d].lessons || state.days[d].levels);
-  // сегодня ещё не занимались — серия не обрывается
-  let off = active(today()) ? 0 : -1;
+  const active = (d) => state.days[d] && (state.days[d].cards || state.days[d].rounds);
+  let off = active(today()) ? 0 : -1; // сегодня ещё не занимались — серия не обрывается
   while (active(today(off))) { n++; off--; }
   return n;
 }
