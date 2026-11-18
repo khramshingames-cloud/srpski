@@ -5,7 +5,7 @@
 // Приложение само докачивает озвучку выбранного голоса и картинки в фоне.
 // Картинки (Fluent Emoji 3D) берутся с jsDelivr и тоже кладутся в кэш навсегда.
 // После перегенерации озвучки — поднять версию AUDIO.
-const CACHE = 'srpski-v12';
+const CACHE = 'srpski-v14'; // при выпуске поднимать вместе с VERSION в js/app.js
 const IMAGES = 'srpski-images-v1'; // картинки Fluent Emoji с jsDelivr
 const AUDIO = 'srpski-audio-v1';
 const SHELL = [
@@ -20,10 +20,15 @@ self.addEventListener('install', (e) => {
     .then(() => self.skipWaiting()));
 });
 
+// Если до нас стояла другая версия — это обновление: просим открытые окна перезапуститься
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys()
-    .then((keys) => Promise.all(keys.filter((k) => ![CACHE, AUDIO, IMAGES].includes(k)).map((k) => caches.delete(k))))
-    .then(() => self.clients.claim()));
+  e.waitUntil((async () => {
+    const keys = await caches.keys();
+    const updated = keys.some((k) => k.startsWith('srpski-v') && k !== CACHE);
+    await Promise.all(keys.filter((k) => ![CACHE, AUDIO, IMAGES].includes(k)).map((k) => caches.delete(k)));
+    await self.clients.claim();
+    if (updated) (await self.clients.matchAll({ type: 'window' })).forEach((c) => c.postMessage('updated'));
+  })());
 });
 
 self.addEventListener('fetch', (e) => {
@@ -44,13 +49,17 @@ self.addEventListener('fetch', (e) => {
     })));
     return;
   }
+  // Саму страницу (navigate) нельзя перезапросить «как есть» с другими параметрами —
+  // браузер выдаёт ошибку, и раньше из-за этого показывалась старая копия. Берём её по адресу.
+  const fresh = e.request.mode === 'navigate'
+    ? new Request(e.request.url, { cache: 'no-cache', credentials: 'same-origin' })
+    : new Request(e.request, { cache: 'no-cache' });
   e.respondWith(
-    fetch(e.request, { cache: 'no-cache' })
+    fetch(fresh)
       .then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(e.request, copy));
+        if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); }
         return res;
       })
-      .catch(() => caches.match(e.request)),
+      .catch(() => caches.match(e.request, { ignoreSearch: true }).then((hit) => hit || caches.match('./'))),
   );
 });

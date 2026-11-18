@@ -233,3 +233,5 @@ body.in-deck { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+.version { text-align: center; color: var(--muted); font-size: 12px; opacity: .6; margin: 18px 0 0; }

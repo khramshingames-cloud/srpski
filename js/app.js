@@ -63,6 +63,7 @@ function totals() {
 }
 
 const MIX_SIZE = 50;
+const VERSION = 14; // при выпуске поднимать вместе с CACHE в sw.js — видно внизу «Ещё»
 
 // ---- Главная: путь уровней ----
 function renderLevels() {
@@ -137,6 +138,7 @@ function playDeck({ cards, build, levelIds, cover }) {
     ov.remove();
     document.body.classList.remove('in-deck');
     renderTabs();
+    window.dispatchEvent(new Event('deckclosed'));
   };
   $('.x', ov).onclick = close;
   $('.prev', ov).onclick = () => { if (S.i > 0 && !S.interlude) { S.i--; showCard(); } };
@@ -273,6 +275,7 @@ function renderSettings() {
         <button class="btn danger" data-act="reset">Сбросить всё</button>
       </div>
       <input type="file" id="imp" accept="application/json" hidden></div>
+    <p class="version">версия ${VERSION}</p>
 `;
 
   view.onclick = (e) => {
@@ -374,7 +377,19 @@ function warmImages() {
 
 applyTheme();
 renderTabs();
+
+// Обновления: при каждом открытии (и при возврате из фона) спрашиваем сайт о новой версии.
+// Новая версия ставится сама и приложение тихо перезапускается — но не посреди карточек.
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js').then((reg) => {
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
+  }).catch(() => {});
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('message', (e) => {
+    if (e.data !== 'updated' || reloading) return;
+    const go = () => { if (!reloading) { reloading = true; location.reload(); } };
+    if (document.body.classList.contains('in-deck')) window.addEventListener('deckclosed', go, { once: true });
+    else go();
+  });
   setTimeout(() => { warmAudio(); warmImages(); }, 3000);
 }
