@@ -246,6 +246,12 @@ const saveBad = (set) => { try { localStorage.setItem(BAD_KEY, JSON.stringify([.
 function renderSettings() {
   const s = store.settings();
   view.innerHTML = `<h2 class="page-h">Настройки</h2>
+    <div class="set"><label>Тема</label>
+      <div class="seg" data-k="theme">
+        <button data-v="auto" class="${s.theme === 'auto' ? 'on' : ''}">Авто</button>
+        <button data-v="light" class="${s.theme === 'light' ? 'on' : ''}">Светлая</button>
+        <button data-v="dark" class="${s.theme === 'dark' ? 'on' : ''}">Тёмная</button>
+      </div></div>
     <div class="set"><label>Азбука</label>
       <div class="seg" data-k="script">
         <button data-v="lat" class="${s.script === 'lat' ? 'on' : ''}">Latinica</button>
@@ -274,6 +280,7 @@ function renderSettings() {
     if (seg) {
       const k = seg.parentElement.dataset.k;
       store.setSetting(k, seg.dataset.v);
+      if (k === 'theme') applyTheme();
       renderSettings();
       if (k === 'voice') { speak('Dobar dan, kako si?', { slow: false }); warmAudio(); }
       return;
@@ -341,6 +348,15 @@ function renderAudioCheck() {
 
 // ================= Мелочи =================
 
+// Тема: «Авто» — как в системе телефона, иначе принудительно светлая или тёмная
+function applyTheme() {
+  const t = store.settings().theme;
+  if (t === 'auto') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = t;
+  const dark = t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => { m.content = dark ? '#1c1916' : '#f6f1ea'; });
+}
+
 function toast(text) {
   const t = document.createElement('div');
   t.className = 'toast';
@@ -356,6 +372,7 @@ function warmImages() {
   urls.forEach((u, i) => setTimeout(() => { new Image().src = u; }, i * 30));
 }
 
+applyTheme();
 renderTabs();
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.register('sw.js').catch(() => {});

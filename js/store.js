@@ -11,6 +11,7 @@ const DEFAULTS = {
   rate: 1,         // скорость озвучки
   voice: 'f',      // f — Софи, m — Никола
   stress: true,    // подсвечивать ударную гласную
+  theme: 'auto',   // auto (как в системе) | light | dark
 };
 
 const fresh = (settings = DEFAULTS) => ({ v: 3, levels: {}, days: {}, settings: { ...settings } });
