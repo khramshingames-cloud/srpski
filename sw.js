@@ -5,7 +5,7 @@
 // Приложение само докачивает озвучку выбранного голоса и картинки в фоне.
 // Картинки (Fluent Emoji 3D) берутся с jsDelivr и тоже кладутся в кэш навсегда.
 // После перегенерации озвучки — поднять версию AUDIO.
-const CACHE = 'srpski-v10';
+const CACHE = 'srpski-v11';
 const IMAGES = 'srpski-images-v1'; // картинки Fluent Emoji с jsDelivr
 const AUDIO = 'srpski-audio-v1';
 const SHELL = [
